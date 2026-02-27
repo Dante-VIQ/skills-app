@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\Child;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -22,35 +22,35 @@ class ChildLoginController extends Controller
             'password' => 'required|string',
         ]);
 
-        // Find child by username
-        $child = Child::where('username', $request->username)->where('is_active', true)->first();
+        // Find user with child role by username
+        $user = User::role('child')
+            ->where('username', $request->username)
+            ->where('is_active', true)
+            ->first();
 
-        // Check if child exists and password is correct
-        if (!$child || !Hash::check($request->password, $child->password)) {
+        if (!$user || !Hash::check($request->password, $user->password)) {
             return back()
                 ->withErrors([
                     'username' => 'The provided credentials do not match our records.',
                 ])
-                ->withInput($request->only('username', 'remember'));
+                ->withInput($request->only('username'));
         }
 
-        // Manually log in the child
-        Auth::guard('child')->login($child, $request->boolean('remember'));
+        Auth::login($user, $request->boolean('remember'));
 
         $request->session()->regenerate();
 
-        // Redirect based on onboarding status
-        if (!$child->onboarding_completed) {
+        if (!$user->onboarding_completed) {
             return redirect()->route('child.onboarding');
         }
 
-         return redirect()->route('child.home');
+        return redirect()->route('child.dashboard');
     }
 
     public function logout(Request $request)
     {
-        Auth::guard('child')->logout();
-
+        Auth::logout();
+        
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 

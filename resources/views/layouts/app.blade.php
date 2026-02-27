@@ -1,181 +1,159 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full">
-
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', 'SkillDNA') - Where Learning Builds Futures</title>
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>@yield('title', 'SkillDNA') - SkillDNA</title>
 
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700" rel="stylesheet" />
-
-    @livewireStyles
-    <!-- Styles -->
+    <!-- Fonts & Styles -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
-    <!-- Custom CSS -->
-    <style>
-        .gradient-bg {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-
-        .skilldna-card {
-            transition: all 0.3s ease;
-            border-radius: 1rem;
-            overflow: hidden;
-        }
-
-        .skilldna-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-        }
-
-        .animate-pulse-slow {
-            animation: pulse 3s ease-in-out infinite;
-        }
-
-        @keyframes float {
-
-            0%,
-            100% {
-                transform: translateY(0);
-            }
-
-            50% {
-                transform: translateY(-10px);
-            }
-        }
-
-        .animate-float {
-            animation: float 6s ease-in-out infinite;
-        }
-    </style>
-
-    @stack('styles')
+    @livewireStyles
 </head>
-
-<body class="font-sans antialiased bg-gray-50 min-h-full">
-    <!-- Navigation -->
-    <nav class="bg-white shadow-sm border-b border-gray-100">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex items-center">
-                    <!-- Logo -->
-                    <div class="flex items-center space-x-2">
-                        <div class="w-10 h-10 gradient-bg rounded-xl flex items-center justify-center">
-                            <span class="text-white font-bold text-xl">S</span>
-                        </div>
-                        <span class="text-2xl font-bold text-gray-900">SkillDNA</span>
+<body class="font-sans antialiased">
+    <div class="min-h-screen bg-gray-50">
+        <!-- Navigation -->
+        @auth
+        <nav class="bg-white/80 backdrop-blur-lg fixed w-full z-50 border-b border-gray-200">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16">
+                    <div class="flex">
+                        <!-- Logo -->
+                <div class="flex items-center space-x-2">
+                    <div class="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-700 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-dna text-white text-xl"></i>
                     </div>
+                    <span class="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-700 bg-clip-text text-transparent">
+                        SkillDNA
+                    </span>
                 </div>
 
-                <div class="flex items-center space-x-4">
-                    @auth
-                        <!-- User menu -->
-                        <div class="relative" x-data="{ open: false }">
-                            <button @click="open = !open" class="flex items-center space-x-2 text-sm focus:outline-none">
-                                <div
-                                    class="w-8 h-8 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold">
-                                    {{ substr(auth()->user()->name, 0, 1) }}
-                                </div>
-                                <span class="hidden md:inline text-gray-700">{{ auth()->user()->getDisplayName() }}</span>
-                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M19 9l-7 7-7-7"></path>
-                                </svg>
-                            </button>
+                        <!-- Navigation Links -->
+                        <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
+                            {{-- Role-based navigation --}}
+                            @role('parent')
+                                <a href="{{ route('dashboard') }}"
+                                   class="{{ request()->routeIs('parent.*') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700' }} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                                    Dashboard
+                                </a>
+                                <a href="{{ route('parent.children') }}"
+                                   class="{{ request()->routeIs('parent.children*') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700' }} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                                    My Children
+                                </a>
+                                <a href="{{ route('parent.assignments') }}"
+                                   class="{{ request()->routeIs('parent.assignments*') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700' }} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                                    Assignments
+                                </a>
+                            @endrole
 
-                            <div x-show="open" @click.away="open = false"
-                                x-transition:enter="transition ease-out duration-100"
-                                x-transition:enter-start="transform opacity-0 scale-95"
-                                x-transition:enter-end="transform opacity-100 scale-100"
-                                x-transition:leave="transition ease-in duration-75"
-                                x-transition:leave-start="transform opacity-100 scale-100"
-                                x-transition:leave-end="transform opacity-0 scale-95"
-                                class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
-                                @if (auth()->user()->isParent())
-                                    <a href="{{ route('dashboard') }}"
-                                        class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Dashboard</a>
-                                    <a href="{{ route('parent.add-child') }}"
-                                        class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Add Child</a>
-                                    <a href="{{ route('parent.assignments') }}"
-                                        class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Assignments</a>
-                                @else
-                                    <a href="{{ route('child.dashboard') }}"
-                                        class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Dashboard</a>
-                                    <a href="{{ route('child.universal.skills') }}"
-                                        class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Universal Skills</a>
-                                @endif
+                            @role('child')
+                                <a href="{{ route('child.dashboard') }}"
+                                   class="{{ request()->routeIs('child.dashboard') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700' }} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                                    Home
+                                </a>
+                                <a href="{{ route('child.learn') }}"
+                                   class="{{ request()->routeIs('child.learn*') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700' }} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                                    Learn
+                                </a>
+                                <a href="{{ route('child.assignments') }}"
+                                   class="{{ request()->routeIs('child.assignments*') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700' }} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                                    My Tasks
+                                </a>
+                            @endrole
 
-                                <a href="{{ route('child.login') }}"
-                                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Login as Child</a>
-                                <div class="border-t border-gray-100 my-1"></div>
-                                <button wire:click="logout" class="w-full text-start">
-                                    <x-dropdown-link>
+                            @role('tutor')
+                                <a href="{{ route('tutor.dashboard') }}"
+                                   class="{{ request()->routeIs('tutor.dashboard') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700' }} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                                    Dashboard
+                                </a>
+                                <a href="{{ route('tutor.students') }}"
+                                   class="{{ request()->routeIs('tutor.students*') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700' }} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                                    Students
+                                </a>
+                            @endrole
+
+                            @role('master')
+                                <a href="{{ route('master.dashboard') }}"
+                                   class="{{ request()->routeIs('master.dashboard') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700' }} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                                    Dashboard
+                                </a>
+                                <a href="{{ route('master.users') }}"
+                                   class="{{ request()->routeIs('master.users*') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700' }} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                                    Users
+                                </a>
+                                <a href="{{ route('master.content') }}"
+                                   class="{{ request()->routeIs('master.content*') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700' }} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                                    Content
+                                </a>
+                            @endrole
+                        </div>
+                    </div>
+
+                    <!-- User Dropdown -->
+                    <div class="hidden sm:ml-6 sm:flex sm:items-center">
+                        <x-dropdown align="right" width="48">
+                            <x-slot name="trigger">
+                                <button class="flex items-center text-sm font-medium text-gray-500 hover:text-gray-700 focus:outline-none transition duration-150 ease-in-out">
+                                    <div>
+                                        {{ Auth::user()->first_name }} {{ Auth::user()->last_name }}
+                                        <div class="text-xs text-gray-400">
+                                            {{ Auth::user()->role_name }}
+                                        </div>
+                                    </div>
+                                    <div class="ml-1">
+                                        <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                        </svg>
+                                    </div>
+                                </button>
+                            </x-slot>
+
+                            <x-slot name="content">
+                                <!-- Account Management -->
+                                <x-dropdown-link href="{{ route('profile.edit') }}">
+                                    {{ __('Profile') }}
+                                </x-dropdown-link>
+
+                                <!-- Role-specific links -->
+                                @role('parent')
+                                    <x-dropdown-link href="{{ route('parent.add-child') }}">
+                                        Add Child
+                                    </x-dropdown-link>
+                                    {{-- <x-dropdown-link href="{{ route('parent.impact') }}">
+                                        Family Impact
+                                    </x-dropdown-link> --}}
+                                @endrole
+
+                                @role('child')
+                                    <x-dropdown-link href="{{ route('child.progress') }}">
+                                        My Progress
+                                    </x-dropdown-link>
+                                @endrole
+
+                                <!-- Authentication -->
+                                <form method="POST" action="{{ route('logout') }}">
+                                    @csrf
+                                    <x-dropdown-link href="{{ route('logout') }}"
+                                            onclick="event.preventDefault();
+                                                        this.closest('form').submit();">
                                         {{ __('Log Out') }}
                                     </x-dropdown-link>
-                                </button>
-                            </div>
-                        </div>
-                    @else
-                        <!-- Login/Register buttons -->
-                        <a href="{{ route('login') }}" class="text-gray-700 hover:text-gray-900 px-3 py-2">Log in</a>
-                        <a href="{{ route('register') }}"
-                            class="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2 rounded-lg hover:shadow-md transition">
-                            Get Started
-                        </a>
-                    @endauth
-                </div>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Main Content -->
-    <main class="py-6">
-        {{ $slot }}
-    </main>
-
-    <!-- Footer -->
-    <footer class="bg-white border-t border-gray-200 mt-12">
-        <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-            <div class="flex flex-col md:flex-row justify-between items-center">
-                <div class="mb-4 md:mb-0">
-                    <div class="flex items-center space-x-2">
-                        <div class="w-8 h-8 gradient-bg rounded-lg flex items-center justify-center">
-                            <span class="text-white font-bold">S</span>
-                        </div>
-                        <span class="text-xl font-bold text-gray-900">SkillDNA</span>
+                                </form>
+                            </x-slot>
+                        </x-dropdown>
                     </div>
-                    <p class="text-gray-600 text-sm mt-2">Where learning builds futures.</p>
-                </div>
-                <div class="flex space-x-6">
-                    <a href="{{ route('impact') }}" class="text-gray-600 hover:text-gray-900">Our Impact</a>
-                    <a href="#" class="text-gray-600 hover:text-gray-900">Privacy</a>
-                    <a href="#" class="text-gray-600 hover:text-gray-900">Terms</a>
-                    <a href="#" class="text-gray-600 hover:text-gray-900">Contact</a>
                 </div>
             </div>
-            <div class="mt-8 pt-8 border-t border-gray-200 text-center text-gray-500 text-sm">
-                © {{ date('Y') }} SkillDNA. All rights reserved.
-            </div>
-        </div>
-    </footer>
+        </nav>
+        @endauth
+
+        <!-- Page Content -->
+        <main>
+            {{-- {{ $slot }} --}}
+            @yield('content')
+        </main>
+    </div>
 
     @livewireScripts
-    <!-- Scripts -->
-    @stack('scripts')
-
-    <!-- Alpine.js for interactivity -->
-    <script src="//unpkg.com/alpinejs" defer></script>
-
-    <!-- Custom Scripts -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Add any global JavaScript here
-        });
-    </script>
 </body>
-
 </html>

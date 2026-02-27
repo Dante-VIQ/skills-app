@@ -6,26 +6,20 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
- Schema::create('content_module_skills', function (Blueprint $table) {
+        Schema::create('content_module_skills', function (Blueprint $table) {
             $table->id();
             $table->foreignId('content_module_id')->constrained('content_modules')->onDelete('cascade');
             $table->foreignId('skill_id')->constrained('skills')->onDelete('cascade');
-            $table->integer('strength_score')->default(1);
+            $table->float('weight')->default(1.0); // How much this module contributes to the skill
             $table->timestamps();
             
-            $table->unique(['content_module_id', 'skill_id']);
-            $table->index('strength_score');
+            $table->unique(['content_module_id', 'skill_id'], 'module_skill_unique');
+            $table->index('skill_id');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('content_module_skills');

@@ -6,66 +6,71 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use App\Models\ChildActivity;
 use App\Models\ParentAssignment;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Routing\Controller;
 
 class ParentAssignmentController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware(['auth', 'verified', 'role:parent']);
+    }
+    
     public function index()
     {
-        $children = Auth::user()->children;
-        $assignments = ParentAssignment::whereIn('child_id', $children->pluck('id'))
+        $this->authorize('create assignments');
+        
+        $parent = auth()->user();
+        $children = $parent->children;
+        
+        // Get assignments created by this parent
+        $assignments = ParentAssignment::where('parent_id', $parent->id)
             ->with('child')
-            ->orderBy('created_at', 'desc')
-            ->get();
-
+            ->latest()
+            ->paginate(10);
+        
         return view('parent.assignments.index', compact('assignments', 'children'));
     }
-
+    
     public function store(Request $request)
     {
+        $this->authorize('create assignments');
+        
         $request->validate([
             'child_id' => 'required|exists:users,id',
             'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'type' => 'required|in:quiz,activity,challenge,reflection',
-            'questions' => 'required_if:type,quiz|array',
-            'due_date' => 'nullable|date|after:now',
-            'blocks_content' => 'boolean',
+            'description' => 'required|string',
+            'due_date' => 'required|date|after:today',
         ]);
-
-        // Verify parent owns this child
-        $child = auth()->user()->children()->find($request->child_id);
-        if (!$child) {
-            return redirect()->back()->with('error', 'Invalid child selected.');
+        
+        // Verify the child belongs to this parent
+        $parent = auth()->user();
+        if (!$parent->children()->where('id', $request->child_id)->exists()) {
+            abort(403, 'You can only assign tasks to your own children.');
         }
-
-        ParentAssignment::create([
-            'parent_id' => Auth::id(),
+        
+        $assignment = ParentAssignment::create([
+            'parent_id' => $parent->id,
             'child_id' => $request->child_id,
             'title' => $request->title,
             'description' => $request->description,
-            'type' => $request->type,
-            'content' => $request->questions ?? [],
             'due_date' => $request->due_date,
-            'blocks_content' => $request->boolean('blocks_content', true),
-            'status' => 'assigned',
+            'status' => 'pending',
         ]);
-
-        return redirect()->route('parent.assignments')->with('success', 'Assignment created successfully.');
+        
+        return redirect()->route('parent.assignments')
+            ->with('success', 'Assignment created successfully.');
     }
-
+    
     public function viewActivities(User $child)
     {
-        // Verify parent owns this child
-        if (!Auth::user()->children->contains($child)) {
-            abort(403);
-        }
-
+        // Use Laravel's policy for authorization
+        $this->authorize('viewChildActivities', $child);
+        
         $activities = ChildActivity::where('child_id', $child->id)
-            ->orderBy('created_at', 'desc')
-            ->with('assignment')
+            ->with('contentModule.category')
+            ->latest()
             ->paginate(20);
-
-        return view('parent.activities', compact('child', 'activities'));
+        
+        return view('parent.activities.index', compact('child', 'activities'));
     }
 }

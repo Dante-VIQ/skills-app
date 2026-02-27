@@ -2,54 +2,70 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class UniversalSkillRequirement extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'parent_id', 'child_id', 'category_id',
-        'required_minutes_per_week', 'is_active', 'blocks_content'
+        'parent_id',
+        'child_id',
+        'content_category_id',
+        'required_minutes',
+        'completed_minutes',
+        'is_required',
+        'deadline',
     ];
 
     protected $casts = [
-        'is_active' => 'boolean',
-        'blocks_content' => 'boolean',
+        'is_required' => 'boolean',
+        'deadline' => 'datetime',
     ];
 
+    // UPDATED Relationships
     public function parent()
     {
-        return $this->belongsTo(User::class, 'parent_id');
+        return $this->belongsTo(User::class, 'parent_id')->whereHas('roles', function ($q) {
+            $q->where('name', 'parent');
+        });
     }
 
     public function child()
     {
-        return $this->belongsTo(User::class, 'child_id');
+        return $this->belongsTo(User::class, 'child_id')->whereHas('roles', function ($q) {
+            $q->where('name', 'child');
+        });
     }
 
     public function category()
     {
-        return $this->belongsTo(ContentCategory::class, 'category_id');
+        return $this->belongsTo(ContentCategory::class, 'content_category_id');
     }
 
-    public function getWatchedMinutesThisWeek()
+    // Methods
+    public function updateProgress()
     {
-        return WatchTimeRecord::where('child_id', $this->child_id)
-            ->where('category_id', $this->category_id)
-            ->where('watch_date', '>=', now()->startOfWeek())
-            ->sum('minutes_watched');
+        $totalMinutes = $this->child->watchTimeRecords()
+            ->where('content_category_id', $this->content_category_id)
+            ->sum('duration');
+        
+        $this->completed_minutes = $totalMinutes;
+        $this->save();
+        
+        return $this;
     }
 
-    public function getRemainingMinutes()
+    public function isMet()
     {
-        $watched = $this->getWatchedMinutesThisWeek();
-        return max(0, $this->required_minutes_per_week - $watched);
+        return $this->completed_minutes >= $this->required_minutes;
     }
 
-    public function isFulfilled()
+    public function progressPercentage()
     {
-        return $this->getRemainingMinutes() === 0;
+        if ($this->required_minutes <= 0) return 100;
+        
+        return min(100, ($this->completed_minutes / $this->required_minutes) * 100);
     }
 }

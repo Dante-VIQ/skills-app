@@ -11,22 +11,32 @@ use Symfony\Component\HttpFoundation\Response;
 
 class CheckPendingAssignments
 {
-    public function handle(Request $request, Closure $next): Response
+    public function handle($request, Closure $next)
     {
-        $user = Auth::user();
-
-        // Only apply to children
-        if ($user && $user->isChild()) {
-            $blockingAssignment = ParentAssignment::where('child_id', $user->id)
-                ->where('blocks_content', true)
-                ->where('status', 'assigned')
-                ->first();
-
-            if ($blockingAssignment && !$request->routeIs('child.assignment.*')) {
-                return redirect()->route('child.assignment.show', $blockingAssignment);
-            }
+        $user = auth()->user();
+        
+        // Only apply to child users
+        if (!$user || $user->type !== 'child') {
+            return $next($request);
         }
-
+        
+        // Routes where assignments should be allowed/visible
+        $allowedRoutes = [
+            'child.assignment.show',
+            'child.assignment.submit',
+            'child.onboarding',
+            'logout', // Allow logout
+        ];
+        
+        if ($request->routeIs($allowedRoutes)) {
+            return $next($request);
+        }
+        
+        if ($user->hasPendingAssignments()) {
+            return redirect()->route('child.assignment.show', $user->pendingAssignments()->first())
+                ->with('info', 'Please complete your pending assignment first.');
+        }
+        
         return $next($request);
     }
 }

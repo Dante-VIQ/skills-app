@@ -9,20 +9,38 @@ class ContentCategory extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'is_universal', 'parent_enforced', 'required_watch_minutes'];
-
-    protected $casts = [
-        'is_universal' => 'boolean',
-        'parent_enforced' => 'boolean',
+    protected $fillable = [
+        'name',
+        'description',
+        'icon',
+        'color',
+        'is_active',
+        'min_age',
+        'max_age',
+        'parent_id',
     ];
 
-    public function contentModules()
+    protected $casts = [
+        'is_active' => 'boolean',
+    ];
+
+    public function modules()
     {
-        return $this->hasMany(ContentModule::class);
+        return $this->hasMany(ContentModule::class, 'content_category_id');
     }
 
-    public function universalRequirements()
+    public function children()
     {
-        return $this->hasMany(UniversalSkillRequirement::class);
+        return $this->hasMany(ContentCategory::class, 'parent_id');
+    }
+
+    public function parent()
+    {
+        return $this->belongsTo(ContentCategory::class, 'parent_id');
+    }
+
+    public function watchTimeRecords()
+    {
+        return $this->hasMany(WatchTimeRecord::class, 'content_category_id');
     }
 }

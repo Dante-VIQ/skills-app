@@ -6,23 +6,23 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-    Schema::create('skills', function (Blueprint $table) {
-        $table->id();
-        $table->string('name');
-        $table->string('key')->unique();
-        $table->text('description')->nullable();
-        $table->timestamps();
-    });
+        Schema::create('skills', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->string('slug')->unique();
+            $table->text('description')->nullable();
+            $table->foreignId('category_id')->nullable()->constrained('content_categories')->onDelete('set null');
+            $table->string('level')->default('beginner'); // beginner, intermediate, advanced
+            $table->json('prerequisites')->nullable(); // Skill IDs required before this
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+            
+            $table->index(['category_id', 'level']);
+        });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('skills');

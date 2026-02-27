@@ -1,5 +1,5 @@
 <x-guest-layout>
-    <form method="POST" action="{{ route('child.login') }}" enctype="multipart/form-data">
+    <form method="POST" action="{{ route('child.login.submit') }}" enctype="multipart/form-data">
         @csrf
 
         <div class="mb-4">
@@ -35,4 +35,5 @@
             </div>
         @endif
     </form>
+
 </x-guest-layout>

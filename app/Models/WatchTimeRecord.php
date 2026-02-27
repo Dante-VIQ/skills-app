@@ -2,34 +2,58 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class WatchTimeRecord extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'child_id', 'content_id', 'category_id',
-        'minutes_watched', 'watch_date'
+        'child_id',
+        'content_module_id',
+        'content_category_id',
+        'duration', // in minutes
+        'started_at',
+        'completed_at',
     ];
 
     protected $casts = [
-        'watch_date' => 'date',
+        'started_at' => 'datetime',
+        'completed_at' => 'datetime',
     ];
 
+    // UPDATED Relationship
     public function child()
     {
-        return $this->belongsTo(User::class, 'child_id');
+        return $this->belongsTo(User::class, 'child_id')->whereHas('roles', function ($q) {
+            $q->where('name', 'child');
+        });
     }
 
-    public function content()
+    public function contentModule()
     {
-        return $this->belongsTo(ContentModule::class, 'content_id');
+        return $this->belongsTo(ContentModule::class);
     }
 
     public function category()
     {
-        return $this->belongsTo(ContentCategory::class, 'category_id');
+        return $this->belongsTo(ContentCategory::class, 'content_category_id');
+    }
+
+    // Scopes
+    public function scopeToday($query)
+    {
+        return $query->whereDate('created_at', today());
+    }
+
+    public function scopeThisWeek($query)
+    {
+        return $query->where('created_at', '>=', now()->startOfWeek());
+    }
+
+    public function scopeForCategory($query, $categoryId)
+    {
+        return $query->where('content_category_id', $categoryId);
     }
 }

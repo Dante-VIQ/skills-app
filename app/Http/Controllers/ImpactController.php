@@ -2,32 +2,52 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use App\Models\SocialImpactProject;
+use App\Models\ImpactContribution;
+use Illuminate\Http\Request;
 
 class ImpactController extends Controller
 {
     public function show()
     {
-        $totalImpact = [
-            'total_raised' => SocialImpactProject::sum('amount_raised'),
-            'total_impacted' => SocialImpactProject::sum('children_impacted'),
-            'completed_projects' => SocialImpactProject::where('amount_raised', '>=', DB::raw('target_amount'))->count(),
-            'active_projects' => SocialImpactProject::where('is_active', true)->count(),
-        ];
-
-        return view('impact.show', compact('totalImpact'));
+        $totalImpact = SocialImpactProject::sum('current_amount');
+        $completedProjects = SocialImpactProject::where('status', 'completed')->count();
+        $activeProjects = SocialImpactProject::where('status', 'active')
+            ->orderByDesc('current_amount')
+            ->take(3)
+            ->get();
+        
+        return view('impact.portal', compact('totalImpact', 'completedProjects', 'activeProjects'));
     }
-
+    
     public function projects()
     {
-        $projects = SocialImpactProject::orderBy('created_at', 'desc')->paginate(12);
+        $projects = SocialImpactProject::with('contributions')
+            ->where('status', 'active')
+            ->paginate(12);
+        
         return view('impact.projects', compact('projects'));
     }
-
+    
     public function projectUpdates(SocialImpactProject $project)
     {
         return view('impact.project-updates', compact('project'));
+    }
+    
+    public function familyImpact()
+    {
+        $this->middleware(['auth', 'verified', 'role:parent']);
+        
+        $parent = auth()->user();
+        
+        // Get impact contributions from all children
+        $familyContributions = ImpactContribution::whereIn('user_id', $parent->children->pluck('id'))
+            ->with(['user', 'project'])
+            ->latest()
+            ->paginate(20);
+        
+        $totalFamilyImpact = $familyContributions->sum('amount');
+        
+        return view('parent.impact.index', compact('familyContributions', 'totalFamilyImpact'));
     }
 }

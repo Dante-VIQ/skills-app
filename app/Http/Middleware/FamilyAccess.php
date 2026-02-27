@@ -9,45 +9,16 @@ use App\Models\Child;
 
 class FamilyAccess
 {
-    public function handle(Request $request, Closure $next): Response
+public function handle($request, Closure $next)
     {
-        $user = $request->user();
+        $childId = $request->route('child');
+        $parent = auth()->user();
         
-        // If no user is logged in, just continue
-        if (!$user) {
-            return $next($request);
+        // Simple check - parent can only access their own children
+        if (!$parent->children()->where('id', $childId)->exists()) {
+            abort(403, 'You can only access your own children\'s data.');
         }
         
-        // Skip middleware for auth routes
-        if ($request->routeIs('login', 'register', 'logout', 'password.*', 'verification.*')) {
-            return $next($request);
-        }
-        
-        // Skip middleware for Livewire update requests
-        if ($request->is('livewire/update') || $request->is('livewire/*')) {
-            return $next($request);
-        }
-        
-        // Only apply to parents accessing child data
-        if ($user->isParent()) {
-            if ($request->route('child')) {
-                $child = $request->route('child');
-                
-                // If child is an ID, get the Child model
-                if (is_numeric($child)) {
-                    $child = Child::find($child);
-                }
-                
-                // Check if child belongs to this parent
-                if (!$child || $child->parent_id !== $user->id) {
-                    abort(403, 'You do not have access to this child\'s data.');
-                }
-            }
-        }
-        
-        // Note: Removed child accessing parent logic since children are now separate
-        // Children have their own authentication via 'child' guard
-
         return $next($request);
     }
 }
