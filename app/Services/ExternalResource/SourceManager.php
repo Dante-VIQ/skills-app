@@ -3,8 +3,9 @@
 
 namespace App\Services\ExternalResource;
 
-use App\Models\EducationalSource;
 use App\Models\CuratedResource;
+use App\Models\EducationalResource;
+use App\Models\EducationalSource;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -130,7 +131,7 @@ class SourceManager
     public function initializeSources()
     {
         foreach ($this->sources as $slug => $config) {
-            EducationalSource::updateOrCreate(
+            EducationalResource::updateOrCreate(
                 ['slug' => $slug],
                 array_merge($config, [
                     'name' => $config['name'],
@@ -146,7 +147,7 @@ class SourceManager
             );
         }
         
-        return EducationalSource::count();
+        return EducationalResource::count();
     }
 
     /**
@@ -154,7 +155,7 @@ class SourceManager
      */
     public function getSource($slug)
     {
-        return EducationalSource::where('slug', $slug)->first();
+        return EducationalResource::where('slug', $slug)->first();
     }
 
     /**
@@ -162,7 +163,7 @@ class SourceManager
      */
     public function getActiveSources()
     {
-        return EducationalSource::where('is_trusted', true)
+        return EducationalResource::where('is_trusted', true)
             ->orderBy('trust_score', 'desc')
             ->get();
     }

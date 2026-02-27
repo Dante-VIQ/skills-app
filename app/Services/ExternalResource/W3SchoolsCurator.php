@@ -3,8 +3,9 @@
 
 namespace App\Services\ExternalResource;
 
-use App\Models\EducationalSource;
 use App\Models\CuratedResource;
+use App\Models\EducationalResource;
+use App\Services\ExternalResource\SourceManager;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -16,12 +17,12 @@ class W3SchoolsCurator
     
     public function __construct()
     {
-        $this->source = EducationalSource::where('slug', 'w3schools')->first();
+        $this->source = EducationalResource::where('slug', 'w3schools')->first();
         
         if (!$this->source) {
             // Initialize sources if not exists
             app(SourceManager::class)->initializeSources();
-            $this->source = EducationalSource::where('slug', 'w3schools')->first();
+            $this->source = EducationalResource::where('slug', 'w3schools')->first();
         }
     }
 

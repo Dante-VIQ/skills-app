@@ -2,311 +2,348 @@
 
 namespace App\Http\Controllers\Child;
 
-use App\Models\User;
-use App\Models\LearningResource;
-use App\Models\UserInteraction;
+
+use App\Models\UserInterest;
+use App\Services\Discovery\AutomatedContentDiscovery;
+use App\Services\ML\ResourceReferralService;
 use App\Services\RecommendationService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 class LearningController extends Controller
 {
-    protected $recommendationService;
-
-    public function __construct(RecommendationService $recommendationService)
-    {
-        $this->recommendationService = $recommendationService;
+     protected $discoveryService;
+    protected $referralService;
+    
+    public function __construct(
+        AutomatedContentDiscovery $discoveryService,
+        ResourceReferralService $referralService
+    ) {
+        $this->discoveryService = $discoveryService;
+        $this->referralService = $referralService;
     }
 
     /**
-     * Main learning dashboard - personalized for each user type
+     * THE UNIVERSAL LEARNING PAGE - Same for everyone!
      */
-    public function index(Request $request)
+    public function index()
     {
         $user = Auth::user();
-
-        // Log the access
-        Log::info('Learning dashboard accessed', [
-            'user_id' => $user->id,
-            'user_type' => $user->role
-        ]);
-
-        // Get personalized recommendations
-        $recommendations = $this->recommendationService->getPersonalizedFeed($user);
-
-        // Get user's current assignments/progress
-        $inProgress = $this->getInProgressContent($user);
-
-        // Get stats based on user type
-        $stats = $this->getUserStats($user);
-
-        // Return appropriate view based on user role
-        switch($user->role) {
-            case 'child':
-                return view('Learn.dashboard', [
-                    'recommendations' => $recommendations,
-                    'assignments'=> $inProgress,
-                    'stats' => $stats,
-                    'child' => $user
-                ]);
-
-            case 'parent':
-                // Get all children for this parent
-                $children = User::where('parent_id', $user->id)->get();
-
-                return view('Learn.dashboard', [
-                    'children' => $children,
-                    'familyProgress' => $this->getFamilyProgress($children),
-                    'recommendations' => $recommendations,
-                    'pendingReviews' => $this->getPendingReviews($children)
-                ]);
-
-            case 'tutor':
-                return view('Learn.tutor-dashboard', [
-                    'students' => $this->getTutorStudents($user),
-                    'teachingMaterials' => $this->getTeachingMaterials($user),
-                    'recommendations' => $recommendations,
-                    'classProgress' => $this->getClassProgress($user)
-                ]);
-
-            default:
-                return view('Learn.index', [
-                    'recommendations' => $recommendations
-                ]);
+        
+        // Step 1: Check if user has interests, if not redirect to onboarding
+        if (!$this->userHasInterests($user)) {
+            return redirect()->route('onboarding.interests')
+                ->with('message', 'Tell us what you like to learn!');
         }
-    }
-
-    /**
-     * Show a specific learning resource
-     */
-    public function show($id)
-    {
-        $user = Auth::user();
-        $resource = LearningResource::with('category')->findOrFail($id);
-
-        // Track the view
-        $this->trackInteraction($user->id, $resource->id, 'view');
-
-        // Get similar resources
-        $similar = $this->recommendationService->getSimilarContent($resource->id, 5);
-
-        // Check if user has already interacted
-        $userProgress = UserInteraction::where('user_id', $user->id)
-            ->where('learning_resource_id', $resource->id)
-            ->where('interaction_type', 'watch')
-            ->first();
-
-        return view('learning.show', [
-            'resource' => $resource,
-            'similar' => $similar,
-            'progress' => $userProgress,
-            'isCompleted' => $this->isResourceCompleted($user->id, $resource->id)
+        
+        // Step 2: Get personalized content based on user type and age
+        $content = $this->getPersonalizedContent($user);
+        
+        // Step 3: Get user's learning context
+        $context = $this->getUserContext($user);
+        
+        // Step 4: Return the SAME view for everyone
+        return view('Learn.index', [
+            'content' => $content,
+            'user' => $user,
+            'context' => $context,
+            'userType' => $this->getUserTypeLabel($user),
+            'ageGroup' => $this->getAgeGroup($user),
         ]);
     }
 
     /**
-     * Track user interaction (called via AJAX)
+     * Get personalized content for ANY user
      */
-    public function trackInteraction(Request $request)
+    protected function getPersonalizedContent($user)
     {
-        $user = Auth::user();
+        $cacheKey = "user:{$user->id}:learning:content";
+        
+        return Cache::remember($cacheKey, now()->addHours(6), function () use ($user) {
+            // Get user's active interests
+            $interests = UserInterest::where('user_id', $user->id)
+                ->active()
+                ->get();
+            
+            $content = [
+                'recommended' => $this->getRecommendedContent($user, $interests),
+                'popular_in_age' => $this->getPopularForAgeGroup($user),
+                'based_on_interests' => $this->getInterestBasedContent($user, $interests),
+                'trending' => $this->getTrendingContent($user),
+                'skill_gaps' => $this->getSkillGapContent($user),
+            ];
+            
+            // Add user-type specific content
+            switch ($user->role) {
+                case 'parent':
+                    $content['for_parents'] = $this->getParentingContent($user);
+                    break;
+                case 'tutor':
+                    $content['teaching_materials'] = $this->getTeachingMaterials($user);
+                    break;
+            }
+            
+            return $content;
+        });
+    }
 
-        $validated = $request->validate([
-            'resource_id' => 'required|exists:learning_resources,id',
-            'interaction_type' => 'required|in:view,watch,complete,like,save',
-            'duration' => 'nullable|integer',
-            'progress' => 'nullable|numeric|min:0|max:100',
-            'rating' => 'nullable|integer|min:1|max:5'
-        ]);
-
-        // Create or update interaction
-        $interaction = UserInteraction::updateOrCreate(
-            [
-                'user_id' => $user->id,
-                'learning_resource_id' => $validated['resource_id'],
-                'interaction_type' => $validated['interaction_type'],
-                'created_at' => now()->toDateString()
-            ],
-            [
-                'duration' => $validated['duration'] ?? null,
-                'progress_percentage' => $validated['progress'] ?? 0,
-                'rating' => $validated['rating'] ?? null,
-                'completed' => ($validated['progress'] ?? 0) >= 90
-            ]
-        );
-
-        // If this is a completion, award points
-        if ($validated['interaction_type'] === 'complete') {
-            $this->awardPoints($user, $validated['resource_id']);
+    /**
+     * Get user context (progress, stats, etc.)
+     */
+    protected function getUserContext($user)
+    {
+        $context = [
+            'total_learning_time' => $this->getTotalLearningTime($user),
+            'completed_count' => $this->getCompletedCount($user),
+            'current_streak' => $this->getLearningStreak($user),
+            'next_milestone' => $this->getNextMilestone($user),
+            'recent_activity' => $this->getRecentActivity($user),
+        ];
+        
+        // Add user-type specific context
+        if ($user->role === 'parent') {
+            $context['children_progress'] = $this->getChildrenProgress($user);
         }
-
-        // Trigger recommendation model update (async)
-        $this->recommendationService->queueUserUpdate($user->id);
-
-        return response()->json([
-            'success' => true,
-            'points_earned' => $validated['interaction_type'] === 'complete' ? 10 : 0
-        ]);
+        
+        if ($user->role === 'tutor') {
+            $context['students_count'] = $this->getStudentCount($user);
+        }
+        
+        return $context;
     }
 
     /**
-     * Get recommendations for API (for infinite scroll)
+     * Check if user has interests
      */
-    public function getMoreRecommendations(Request $request)
+    protected function userHasInterests($user)
     {
-        $user = Auth::user();
-        $offset = $request->get('offset', 0);
-        $limit = $request->get('limit', 10);
+        return UserInterest::where('user_id', $user->id)->exists();
+    }
 
-        $recommendations = $this->recommendationService->getMoreRecommendations(
-            $user,
-            $offset,
-            $limit
+    /**
+     * Get content based on age group
+     */
+    protected function getRecommendedContent($user, $interests)
+    {
+        $age = $this->getUserAge($user);
+        $difficulty = $this->ageToDifficulty($age);
+        
+        // Search across all sources
+        return $this->discoveryService->searchMultiSource(
+            interests: $interests->pluck('category')->toArray(),
+            difficulty: $difficulty,
+            limit: 10,
+            user: $user
         );
-
-        return response()->json([
-            'success' => true,
-            'recommendations' => $recommendations,
-            'has_more' => count($recommendations) === $limit
-        ]);
     }
 
     /**
-     * Private helper methods
+     * Get popular content for user's age group
      */
-    private function getInProgressContent($user)
+    protected function getPopularForAgeGroup($user)
     {
-        if ($user->role !== 'child') {
+        $age = $this->getUserAge($user);
+        $difficulty = $this->ageToDifficulty($age);
+        
+        return \App\Models\CuratedResource::where('difficulty_level', $difficulty)
+            ->where('is_safe', true)
+            ->orderBy('popularity_score', 'desc')
+            ->limit(6)
+            ->get()
+            ->map(function ($resource) {
+                return [
+                    'type' => 'curated',
+                    'title' => $resource->title,
+                    'description' => $resource->summary,
+                    'url' => route('resources.redirect', $resource->id),
+                    'source' => $resource->source->name,
+                    'thumbnail' => $resource->thumbnail_url,
+                    'reason' => 'Popular in your age group'
+                ];
+            });
+    }
+
+    /**
+     * Get content based on specific interests
+     */
+    protected function getInterestBasedContent($user, $interests)
+    {
+        $results = [];
+        
+        foreach ($interests->take(3) as $interest) {
+            $content = $this->discoveryService->searchByTopic(
+                topic: $interest->category,
+                subTopic: $interest->subcategory,
+                limit: 3,
+                user: $user
+            );
+            
+            $results[$interest->category] = $content;
+        }
+        
+        return $results;
+    }
+
+    /**
+     * Get trending content
+     */
+    protected function getTrendingContent($user)
+    {
+        return \App\Models\LearningResource::where('is_published', true)
+            ->orderBy('view_count', 'desc')
+            ->limit(5)
+            ->get()
+            ->map(function ($resource) {
+                return [
+                    'type' => 'internal',
+                    'id' => $resource->id,
+                    'title' => $resource->title,
+                    'description' => $resource->summary,
+                    'url' => route('learning.show', $resource->id),
+                    'views' => $resource->view_count,
+                    'reason' => 'Trending now'
+                ];
+            });
+    }
+
+    /**
+     * Get content to fill skill gaps
+     */
+    protected function getSkillGapContent($user)
+    {
+        // Analyze user's learning history to find gaps
+        $completedTopics = $user->completedResources()
+            ->pluck('topic')
+            ->unique()
+            ->toArray();
+        
+        $allTopics = ['math', 'science', 'programming', 'robotics', 'language'];
+        $gaps = array_diff($allTopics, $completedTopics);
+        
+        if (empty($gaps)) {
             return collect();
         }
-
-        return UserInteraction::where('user_id', $user->id)
-            ->where('interaction_type', 'watch')
-            ->where('completed', false)
-            ->where('progress_percentage', '>', 0)
-            ->with('resource')
-            ->orderBy('updated_at', 'desc')
-            ->limit(5)
-            ->get();
+        
+        return $this->discoveryService->searchMultiSource(
+            interests: $gaps,
+            difficulty: 'beginner',
+            limit: 3
+        );
     }
 
-    private function getUserStats($user)
+    /**
+     * Helper methods
+     */
+    protected function getUserAge($user)
     {
-        $stats = [
-            'total_watched' => 0,
-            'total_minutes' => 0,
-            'completed_count' => 0,
-            'points' => 0
-        ];
-
         if ($user->role === 'child') {
-            $stats['total_watched'] = UserInteraction::where('user_id', $user->id)
-                ->where('interaction_type', 'watch')
-                ->count();
-
-            $stats['total_minutes'] = UserInteraction::where('user_id', $user->id)
-                ->where('interaction_type', 'watch')
-                ->sum('duration') / 60;
-
-            $stats['completed_count'] = UserInteraction::where('user_id', $user->id)
-                ->where('interaction_type', 'complete')
-                ->count();
-
-            $stats['points'] = $user->points ?? 0;
+            return $user->age ?? 10;
         }
-
-        return $stats;
+        
+        // For parents/tutors, return adult age
+        return 25;
     }
 
-    private function getFamilyProgress($children)
+    protected function getAgeGroup($user)
     {
-        $progress = [];
-        foreach ($children as $child) {
-            $progress[$child->id] = [
-                'name' => $child->name,
-                'completed' => UserInteraction::where('user_id', $child->id)
-                    ->where('interaction_type', 'complete')
-                    ->count(),
-                'in_progress' => UserInteraction::where('user_id', $child->id)
-                    ->where('interaction_type', 'watch')
-                    ->where('completed', false)
-                    ->count(),
-                'last_active' => UserInteraction::where('user_id', $child->id)
-                    ->latest()
-                    ->first()?->created_at
-            ];
+        $age = $this->getUserAge($user);
+        
+        if ($age < 8) return 'Early Learner (5-7)';
+        if ($age < 12) return 'Elementary (8-11)';
+        if ($age < 15) return 'Middle School (12-14)';
+        if ($age < 18) return 'High School (15-17)';
+        return 'Adult Learner (18+)';
+    }
+
+    protected function ageToDifficulty($age)
+    {
+        if ($age < 8) return 'beginner';
+        if ($age < 12) return 'intermediate';
+        return 'advanced';
+    }
+
+    protected function getUserTypeLabel($user)
+    {
+        $labels = [
+            'child' => 'Student',
+            'parent' => 'Parent',
+            'tutor' => 'Educator',
+        ];
+        
+        return $labels[$user->role] ?? 'Learner';
+    }
+
+    protected function getTotalLearningTime($user)
+    {
+        return $user->interactions()
+            ->sum('watch_duration') / 3600; // hours
+    }
+
+    protected function getCompletedCount($user)
+    {
+        return $user->interactions()
+            ->where('completed', true)
+            ->count();
+    }
+
+    protected function getLearningStreak($user)
+    {
+        // Calculate consecutive days with learning
+        $dates = $user->interactions()
+            ->selectRaw('DATE(created_at) as date')
+            ->distinct()
+            ->orderBy('date', 'desc')
+            ->pluck('date');
+        
+        $streak = 0;
+        $current = now()->toDateString();
+        
+        foreach ($dates as $date) {
+            if ($date == $current) {
+                $streak++;
+                $current = date('Y-m-d', strtotime($current . ' -1 day'));
+            } else {
+                break;
+            }
         }
-        return $progress;
+        
+        return $streak;
     }
 
-    private function getPendingReviews($children)
+    protected function getNextMilestone($user)
     {
-        // Get assignments that need parent review
-        return []; // Implement based on your assignment system
+        $completed = $this->getCompletedCount($user);
+        $milestones = [10, 25, 50, 100, 250, 500];
+        
+        foreach ($milestones as $milestone) {
+            if ($completed < $milestone) {
+                return [
+                    'next' => $milestone,
+                    'remaining' => $milestone - $completed,
+                    'progress' => ($completed / $milestone) * 100
+                ];
+            }
+        }
+        
+        return null;
     }
 
-    private function getTutorStudents($tutor)
+    protected function getRecentActivity($user)
     {
-        // Get students assigned to this tutor
-        return User::where('tutor_id', $tutor->id)->get();
-    }
-
-    private function getTeachingMaterials($tutor)
-    {
-        // Get materials the tutor has created or uses
-        return LearningResource::where('created_by', $tutor->id)
-            ->orWhereJsonContains('tags', 'teaching_material')
-            ->limit(10)
-            ->get();
-    }
-
-    private function getClassProgress($tutor)
-    {
-        // Aggregate progress for all students
-        return []; // Implement based on your needs
-    }
-
-    // private function trackInteraction($userId, $resourceId, $type)
-    // {
-    //     try {
-    //         UserInteraction::create([
-    //             'user_id' => $userId,
-    //             'learning_resource_id' => $resourceId,
-    //             'interaction_type' => $type,
-    //             'created_at' => now()
-    //         ]);
-
-    //         // Increment view count
-    //         if ($type === 'view') {
-    //             LearningResource::where('id', $resourceId)->increment('view_count');
-    //         }
-    //     } catch (\Exception $e) {
-    //         Log::error('Failed to track interaction', [
-    //             'error' => $e->getMessage(),
-    //             'user_id' => $userId,
-    //             'resource_id' => $resourceId
-    //         ]);
-    //     }
-    // }
-
-    private function isResourceCompleted($userId, $resourceId)
-    {
-        return UserInteraction::where('user_id', $userId)
-            ->where('learning_resource_id', $resourceId)
-            ->where('interaction_type', 'complete')
-            ->exists();
-    }
-
-    private function awardPoints($user, $resourceId)
-    {
-        $resource = LearningResource::find($resourceId);
-        $points = $resource->points ?? 10;
-
-        $user->points = ($user->points ?? 0) + $points;
-        $user->save();
-
-        // Could also trigger badge checks here
+        return $user->interactions()
+            ->with('resource')
+            ->latest()
+            ->limit(5)
+            ->get()
+            ->map(function ($interaction) {
+                return [
+                    'title' => $interaction->resource->title,
+                    'type' => $interaction->interaction_type,
+                    'time' => $interaction->created_at->diffForHumans()
+                ];
+            });
     }
 }

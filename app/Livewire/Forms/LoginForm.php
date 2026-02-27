@@ -3,9 +3,11 @@
 namespace App\Livewire\Forms;
 
 use App\Models\User;
+use App\Services\Discovery\AutomatedContentDiscovery;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Validate;
@@ -90,4 +92,16 @@ class LoginForm extends Form
     {
         return Str::transliterate(Str::lower($this->login).'|'.request()->ip());
     }
+
+    protected function authenticated(Request $request, $user)
+{
+    // Trigger content discovery on login
+    if ($user->interests()->exists()) {
+        dispatch(function () use ($user) {
+            app(AutomatedContentDiscovery::class)->discoverForUser($user, 20);
+        })->afterResponse();
+    }
+    
+    return redirect()->intended($this->redirectPath());
+}
 }

@@ -1,12 +1,13 @@
 <?php
 
 use App\Http\Controllers\Child\ChildLoginController;
+use App\Http\Controllers\Child\LearningController;
 use App\Http\Controllers\Child\OnboardingController;
 use App\Http\Controllers\Child\ProgressController;
 use App\Http\Controllers\ChildAssignmentController;
 use App\Http\Controllers\ChildDashboardController;
+use App\Http\Controllers\ExternalResourceController;
 use App\Http\Controllers\LandingPageController;
-use App\Http\Controllers\Child\LearningController;
 use App\Http\Controllers\LegalController;
 use App\Http\Controllers\Master\ContentController;
 use App\Http\Controllers\Master\UserController;
@@ -15,10 +16,54 @@ use App\Http\Controllers\ParentAssignmentController;
 use App\Http\Controllers\ParentDashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TutorDashboardController;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\YouTubeController;
-use App\Http\Controllers\ExternalResourceController;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Auth\OnboardingController;
+use App\Http\Controllers\UniversalLearningController;
 
+// Public routes
+Route::get('/', function () {
+    return view('welcome');
+});
+
+// Authentication routes
+Auth::routes();
+
+// Protected routes
+Route::middleware(['auth'])->group(function () {
+    
+    // ============= UNIVERSAL LEARNING ROUTE =============
+    Route::get('/learn', [UniversalLearningController::class, 'index'])
+        ->name('learn');
+    
+    // ============= ONBOARDING ROUTES =============
+    Route::get('/onboarding/interests', [OnboardingController::class, 'showInterests'])
+        ->name('onboarding.interests');
+    
+    Route::post('/onboarding/interests', [OnboardingController::class, 'saveInterests'])
+        ->name('onboarding.interests.save');
+    
+    // ============= API ROUTES =============
+    Route::prefix('api')->group(function () {
+        Route::get('/learning/more', [UniversalLearningController::class, 'loadMore'])
+            ->name('api.learning.more');
+        Route::post('/learning/refresh', [UniversalLearningController::class, 'refresh'])
+            ->name('api.learning.refresh');
+    });
+    
+    // ============= RESOURCE ROUTES =============
+    Route::get('/resources/redirect/{id}', [App\Http\Controllers\ExternalResourceController::class, 'redirect'])
+        ->name('resources.redirect');
+    
+    Route::get('/learning/{id}', [App\Http\Controllers\Child\LearningController::class, 'show'])
+        ->name('learning.show');
+});
+
+// Redirect old routes
+Route::redirect('/child/learn', '/learn');
+Route::redirect('/parent/learn', '/learn');
+Route::redirect('/tutor/learn', '/learn');
 // ======================
 // PUBLIC ROUTES
 // ======================
@@ -83,7 +128,12 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
         return redirect()->back()->with('success', 'Curation completed!');
     })->name('admin.resources.curate.run');
 });
-
+    // Interest selection for new users
+    Route::get('/onboarding/interests', [OnboardingController::class, 'showInterests'])
+        ->name('onboarding.interests');
+    
+    Route::post('/onboarding/interests', [OnboardingController::class, 'saveInterests'])
+        ->name('onboarding.interests.save');
 // Admin routes for YouTube integration
 Route::middleware(['auth', 'can:manage-content'])->prefix('admin/youtube')->group(function () {
     Route::get('/search', [YouTubeController::class, 'search'])->name('admin.youtube.search');

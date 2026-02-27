@@ -155,5 +155,7 @@
     </div>
 
     @livewireScripts
+    <!-- page-specific scripts -->
+    @stack('scripts')
 </body>
 </html>

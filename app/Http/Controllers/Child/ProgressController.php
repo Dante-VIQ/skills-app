@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers\Child;
 
-use App\Http\Controllers\Controller;
 use App\Models\ChildActivity;
 use App\Models\WatchTimeRecord;
-use Illuminate\Http\Request;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Routing\Controller;
 
 class ProgressController extends Controller
 {
