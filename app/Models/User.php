@@ -13,11 +13,12 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\HasApiTokens;
+use MNobre\LaravelTeams\Concerns\HasTeams;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable, HasRoles;
+    use HasApiTokens, HasFactory, Notifiable, HasRoles, HasTeams;
 
     protected $fillable = ['first_name', 'last_name', 'username', 'email', 'password', 'parent_id', 'parent_code', 'date_of_birth', 'avatar', 'interests', 'skills', 'onboarding_completed', 'is_active', 'last_login_at', 'learning_goals'];
 
@@ -248,7 +249,7 @@ public function getInterestsAttribute()
     {
         $total = $this->interactions()->count();
         if ($total === 0) return 0;
-        
+
         $completed = $this->interactions()->where('completed', true)->count();
         return round(($completed / $total) * 100, 2);
     }

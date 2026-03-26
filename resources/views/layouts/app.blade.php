@@ -147,6 +147,42 @@
         </nav>
         @endauth
 
+        @guest
+    <nav class="bg-white/80 backdrop-blur-lg fixed w-full z-50 border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="flex justify-between items-center h-20">
+                <!-- Logo -->
+                <div class="flex items-center space-x-2">
+                    <div class="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-700 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-dna text-white text-xl"></i>
+                    </div>
+                    <span class="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-700 bg-clip-text text-transparent">
+                        SkillDNA
+                    </span>
+                </div>
+
+                <!-- Desktop Menu -->
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="#how-it-works" class="text-gray-600 hover:text-indigo-600 transition">How It Works</a>
+                    <a href="#for-parents" class="text-gray-600 hover:text-indigo-600 transition">For Parents</a>
+                    <a href="#for-kids" class="text-gray-600 hover:text-indigo-600 transition">For Kids</a>
+                    <a href="#pricing" class="text-gray-600 hover:text-indigo-600 transition">Pricing</a>
+                </div>
+
+                <!-- Auth Buttons -->
+                <div class="flex items-center space-x-4">
+                    <a href="{{ route('login') }}" class="text-gray-600 hover:text-indigo-600 font-medium">
+                        Sign In
+                    </a>
+                    <a href="{{ route('register') }}"
+                       class="bg-gradient-to-r from-indigo-600 to-purple-700 text-white px-6 py-2.5 rounded-xl font-medium hover:opacity-90 transition shadow-lg hover:shadow-xl">
+                        Get Started
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+        @endguest
         <!-- Page Content -->
         <main>
             {{-- {{ $slot }} --}}

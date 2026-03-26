@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "4b6293fd5a4718db6871d0eed2d01d63",
+    "content-hash": "0dd822f3700b2a3adc884c3aa5fbd682",
     "packages": [
         {
             "name": "brick/math",
@@ -2228,6 +2228,48 @@
                 "source": "https://github.com/livewire/volt"
             },
             "time": "2026-01-28T03:03:30+00:00"
+        },
+        {
+            "name": "mnobre/laravel-teams",
+            "version": "1.2.2",
+            "source": {
+                "type": "git",
+                "url": "https://codeberg.org/mnobre/laravel-teams.git",
+                "reference": "eab7d9efccd63af3ab834d4447ec248ad1784fd3"
+            },
+            "require": {
+                "php": "^8.1|^8.2"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "MNobre\\LaravelTeams\\LaravelTeamsServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "MNobre\\LaravelTeams\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Mário Nobre",
+                    "email": "m.nobre@ymail.com"
+                }
+            ],
+            "description": "Laravel Teams is a package that provides a simple way to manage teams and their members in a Laravel application.",
+            "keywords": [
+                "laravel",
+                "php",
+                "template"
+            ],
+            "time": "2026-02-13T00:57:02+00:00"
         },
         {
             "name": "monolog/monolog",
@@ -9948,5 +9990,5 @@
         "php": "^8.2"
     },
     "platform-dev": {},
-    "plugin-api-version": "2.6.0"
+    "plugin-api-version": "2.9.0"
 }

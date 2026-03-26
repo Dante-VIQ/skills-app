@@ -111,7 +111,7 @@ class AutomatedContentDiscovery
                 $query .= " tutorial";
             }
 
-            $results = $this->youtubeService->searchEducationalVideos($query, 5);
+            $results = $this->youtubeService->searchVideos($query, 5);
 
             return collect($results)->map(function ($video) use ($category) {
                 return [

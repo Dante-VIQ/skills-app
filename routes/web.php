@@ -1,7 +1,5 @@
 <?php
 
-use App\Http\Controllers\Child\ChildLoginController;
-use App\Http\Controllers\Child\LearningController;
 use App\Http\Controllers\Child\OnboardingController;
 use App\Http\Controllers\Child\ProgressController;
 use App\Http\Controllers\ChildAssignmentController;
@@ -16,34 +14,30 @@ use App\Http\Controllers\ParentAssignmentController;
 use App\Http\Controllers\ParentDashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TutorDashboardController;
+use App\Http\Controllers\UniversalLearningController;
 use App\Http\Controllers\YouTubeController;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Auth\OnboardingController;
-use App\Http\Controllers\UniversalLearningController;
 
 // Public routes
 Route::get('/', function () {
     return view('welcome');
 });
 
-// Authentication routes
-Auth::routes();
-
 // Protected routes
 Route::middleware(['auth'])->group(function () {
-    
+
     // ============= UNIVERSAL LEARNING ROUTE =============
     Route::get('/learn', [UniversalLearningController::class, 'index'])
         ->name('learn');
-    
+
     // ============= ONBOARDING ROUTES =============
     Route::get('/onboarding/interests', [OnboardingController::class, 'showInterests'])
         ->name('onboarding.interests');
-    
+
     Route::post('/onboarding/interests', [OnboardingController::class, 'saveInterests'])
         ->name('onboarding.interests.save');
-    
+
     // ============= API ROUTES =============
     Route::prefix('api')->group(function () {
         Route::get('/learning/more', [UniversalLearningController::class, 'loadMore'])
@@ -51,13 +45,13 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/learning/refresh', [UniversalLearningController::class, 'refresh'])
             ->name('api.learning.refresh');
     });
-    
+
     // ============= RESOURCE ROUTES =============
     Route::get('/resources/redirect/{id}', [App\Http\Controllers\ExternalResourceController::class, 'redirect'])
         ->name('resources.redirect');
-    
-    Route::get('/learning/{id}', [App\Http\Controllers\Child\LearningController::class, 'show'])
-        ->name('learning.show');
+
+    // Route::get('/learning/{id}', [App\Http\Controllers\Child\LearningController::class, 'show'])
+    //     ->name('learning.show');
 });
 
 // Redirect old routes
@@ -77,6 +71,8 @@ Route::get('/cookie-policy', [LegalController::class, 'cookiePolicy'])->name('co
 
 // Auth routes (from Breeze)
 require __DIR__ . '/auth.php';
+require __DIR__ . '/teams.php';
+
 
 // ======================
 // DASHBOARD REDIRECT
@@ -110,7 +106,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/resources', [ExternalResourceController::class, 'index'])->name('resources.index');
     Route::get('/resources/{slug}', [ExternalResourceController::class, 'show'])->name('resources.show');
     Route::get('/resources/redirect/{id}', [ExternalResourceController::class, 'redirect'])->name('resources.redirect');
-    
+
     // API endpoints
     Route::get('/api/resources/related/{learningResource}', [ExternalResourceController::class, 'related']);
     Route::get('/api/resources/recommendations', [ExternalResourceController::class, 'recommendations']);
@@ -122,7 +118,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::get('/resources/curate', function () {
         return view('admin.resources.curate');
     })->name('admin.resources.curate');
-    
+
     Route::post('/resources/curate/run', function () {
         Artisan::call('resources:curate');
         return redirect()->back()->with('success', 'Curation completed!');
@@ -131,7 +127,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     // Interest selection for new users
     Route::get('/onboarding/interests', [OnboardingController::class, 'showInterests'])
         ->name('onboarding.interests');
-    
+
     Route::post('/onboarding/interests', [OnboardingController::class, 'saveInterests'])
         ->name('onboarding.interests.save');
 // Admin routes for YouTube integration
@@ -145,17 +141,18 @@ Route::middleware(['auth', 'can:manage-content'])->prefix('admin/youtube')->grou
 Route::middleware(['auth'])->group(function () {
     // Main learning dashboard
     Route::get('/learn', [App\Http\Controllers\Child\LearningController::class, 'index'])->name('learning.index');
-    
+
     // Child-specific route (if you want a separate URL)
     Route::get('/child/learn', [App\Http\Controllers\Child\LearningController::class, 'index'])->name('child.learn');
-    
+
     // View specific resource
     Route::get('/learn/{id}', [App\Http\Controllers\Child\LearningController::class, 'show'])->name('learning.show');
-    
+
     // API endpoints
     Route::post('/learn/track', [App\Http\Controllers\Child\LearningController::class, 'trackInteraction'])->name('learning.track');
     Route::get('/learn/more', [App\Http\Controllers\Child\LearningController::class, 'getMoreRecommendations'])->name('learning.more');
 });
+
 // ======================
 // PROFILE ROUTES
 // ======================
@@ -190,6 +187,7 @@ Route::middleware(['auth', 'verified', 'role:parent'])
             // ADD THIS LINE - The missing route for showing the add child form
             Route::get('/add-child', [ParentDashboardController::class, 'addChildForm'])->name('add-child');
             Route::post('/children/{child}/resend-credentials', [ParentDashboardController::class, 'resendCredentials'])->name('children.resend-credentials');
+
             Route::get('/children', [ParentDashboardController::class, 'children'])->name('children');
             Route::post('/children', [ParentDashboardController::class, 'addChild'])->name('children.store');
             Route::get('/children/{child}', [ParentDashboardController::class, 'viewChild'])->name('children.view');

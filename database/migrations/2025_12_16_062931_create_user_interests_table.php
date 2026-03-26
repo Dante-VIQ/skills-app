@@ -22,7 +22,7 @@ return new class extends Migration {
             // $table->string('interest_category');
             // $table->string('interest_subcategory')->nullable();
 
-            $table->integer('interest_level')->default(3);
+            // $table->integer('interest_level')->default(3);
             $table->string('source')->default('explicit');
             $table->timestamp('last_updated_at')->nullable();
             $table->timestamps();

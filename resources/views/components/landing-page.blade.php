@@ -1,103 +1,5 @@
-<!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>SkillDNA - Prepare Your Child for Tomorrow</title>
-    
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700,800&display=swap" rel="stylesheet" />
-    
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Scripts -->
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-    
-    <style>
-        @keyframes float {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-            100% { transform: translateY(0px); }
-        }
-        .animate-float {
-            animation: float 3s ease-in-out infinite;
-        }
-        .gradient-text {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        .hover-scale {
-            transition: transform 0.3s ease;
-        }
-        .hover-scale:hover {
-            transform: scale(1.05);
-        }
-        .card-shine {
-            position: relative;
-            overflow: hidden;
-        }
-        .card-shine::after {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(
-                to bottom right,
-                rgba(255,255,255,0.2) 0%,
-                rgba(255,255,255,0.05) 50%,
-                transparent 50%
-            );
-            transform: rotate(30deg);
-            transition: transform 0.5s ease;
-        }
-        .card-shine:hover::after {
-            transform: rotate(30deg) translate(20%, 20%);
-        }
-    </style>
-</head>
-<body class="font-sans antialiased bg-gray-50">
     <!-- Navigation -->
-    {{-- <nav class="bg-white/80 backdrop-blur-lg fixed w-full z-50 border-b border-gray-200">
-        <div class="max-w-7xl mx-auto px-6">
-            <div class="flex justify-between items-center h-20">
-                <!-- Logo -->
-                <div class="flex items-center space-x-2">
-                    <div class="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-700 rounded-xl flex items-center justify-center">
-                        <i class="fas fa-dna text-white text-xl"></i>
-                    </div>
-                    <span class="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-700 bg-clip-text text-transparent">
-                        SkillDNA
-                    </span>
-                </div>
-                
-                <!-- Desktop Menu -->
-                <div class="hidden md:flex items-center space-x-8">
-                    <a href="#how-it-works" class="text-gray-600 hover:text-indigo-600 transition">How It Works</a>
-                    <a href="#for-parents" class="text-gray-600 hover:text-indigo-600 transition">For Parents</a>
-                    <a href="#for-kids" class="text-gray-600 hover:text-indigo-600 transition">For Kids</a>
-                    <a href="#pricing" class="text-gray-600 hover:text-indigo-600 transition">Pricing</a>
-                </div>
-                
-                <!-- Auth Buttons -->
-                <div class="flex items-center space-x-4">
-                    <a href="{{ route('login') }}" class="text-gray-600 hover:text-indigo-600 font-medium">
-                        Sign In
-                    </a>
-                    <a href="{{ route('register') }}" 
-                       class="bg-gradient-to-r from-indigo-600 to-purple-700 text-white px-6 py-2.5 rounded-xl font-medium hover:opacity-90 transition shadow-lg hover:shadow-xl">
-                        Get Started
-                    </a>
-                </div>
-            </div>
-        </div>
-    </nav> --}}
+
 
     <!-- Hero Section -->
     <section class="relative pt-32 pb-20 overflow-hidden">
@@ -108,34 +10,34 @@
                 <path fill="rgba(255,255,255,0.1)" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,122.7C672,117,768,139,864,154.7C960,171,1056,181,1152,170.7C1248,160,1344,128,1392,112L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
             </svg>
         </div>
-        
+
         <div class="relative max-w-7xl mx-auto px-6 text-center">
             <!-- Floating Elements -->
             <div class="absolute top-20 left-10 w-20 h-20 bg-white/10 rounded-full animate-float"></div>
             <div class="absolute bottom-20 right-10 w-32 h-32 bg-white/10 rounded-full animate-float" style="animation-delay: 1s;"></div>
-            
+
             <h1 class="text-5xl md:text-7xl font-extrabold text-white mb-6 leading-tight">
-                Prepare Your Child for a 
+                Prepare Your Child for a
                 <span class="block text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-pink-300">
                     Future We Can't Predict
                 </span>
             </h1>
-            
+
             <p class="max-w-3xl mx-auto text-xl text-white/90 mb-10">
-                SkillDNA helps parents guide children to discover skills, passions, and financial literacy — 
+                SkillDNA helps parents guide children to discover skills, passions, and financial literacy —
                 <span class="font-semibold text-yellow-300">using the screen time they already love.</span>
             </p>
 
             <!-- CTA Buttons -->
             <div class="flex flex-col sm:flex-row justify-center gap-4 mb-12">
-                <a href="#early-access" 
+                <a href="#early-access"
                    class="group bg-white text-indigo-700 px-8 py-4 rounded-xl font-semibold shadow-2xl hover:shadow-3xl transition-all hover-scale">
                     <span class="flex items-center">
                         Get Early Access
                         <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition"></i>
                     </span>
                 </a>
-                <a href="#how-it-works" 
+                <a href="#how-it-works"
                    class="border-2 border-white/40 text-white px-8 py-4 rounded-xl font-semibold hover:bg-white/10 transition backdrop-blur-sm">
                     <i class="fas fa-play-circle mr-2"></i>
                     See How It Works
@@ -182,10 +84,10 @@
                     <span class="gradient-text">The World Demands Skills.</span>
                 </h2>
                 <p class="text-xl text-gray-600 max-w-3xl mx-auto">
-                    Jobs are changing faster than curriculums. Children spend hours on screens with little long-term value. 
+                    Jobs are changing faster than curriculums. Children spend hours on screens with little long-term value.
                     Parents are left guessing what really matters.
                 </p>
-                
+
                 <!-- Stats -->
                 <div class="grid md:grid-cols-3 gap-8 mt-16">
                     <div class="p-6">
@@ -201,7 +103,7 @@
                         <p class="text-gray-600">parents worry about screen content</p>
                     </div>
                 </div>
-                
+
                 <p class="text-2xl font-bold text-indigo-600 mt-12">
                     SkillDNA bridges that gap. <i class="fas fa-arrow-right ml-2"></i>
                 </p>
@@ -216,7 +118,7 @@
                 One Platform.<br>
                 <span class="gradient-text">Two Experiences.</span>
             </h2>
-            
+
             <div class="grid md:grid-cols-2 gap-8">
                 <!-- Parent Card -->
                 <div class="bg-white rounded-3xl p-10 shadow-xl hover:shadow-2xl transition card-shine relative overflow-hidden">
@@ -250,7 +152,7 @@
                         </a>
                     </div>
                 </div>
-                
+
                 <!-- Child Card -->
                 <div id="for-kids" class="bg-white rounded-3xl p-10 shadow-xl hover:shadow-2xl transition card-shine relative overflow-hidden">
                     <div class="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full -mr-16 -mt-16"></div>
@@ -307,7 +209,7 @@
                     <p class="text-gray-600">Create a free account, add your child, and choose learning areas that match their interests.</p>
                     <div class="mt-4 w-16 h-1 bg-gradient-to-r from-blue-500 to-indigo-600 mx-auto rounded-full"></div>
                 </div>
-                
+
                 <!-- Step 2 -->
                 <div class="text-center group">
                     <div class="w-24 h-24 bg-gradient-to-br from-purple-500 to-pink-600 rounded-3xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition shadow-lg">
@@ -317,7 +219,7 @@
                     <p class="text-gray-600">AI builds a personalized learning feed based on interests, age, and skill level.</p>
                     <div class="mt-4 w-16 h-1 bg-gradient-to-r from-purple-500 to-pink-600 mx-auto rounded-full"></div>
                 </div>
-                
+
                 <!-- Step 3 -->
                 <div class="text-center group">
                     <div class="w-24 h-24 bg-gradient-to-br from-green-500 to-teal-600 rounded-3xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition shadow-lg">
@@ -341,10 +243,10 @@
                 Financial Literacy Is <span class="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-pink-300">Mandatory</span>
             </h2>
             <p class="text-xl text-white/90 mb-12 max-w-3xl mx-auto">
-                Every child learns money basics, value creation, effort, profit, and loss — 
+                Every child learns money basics, value creation, effort, profit, and loss —
                 <span class="font-semibold text-yellow-300">clearly, safely, and age-appropriately.</span>
             </p>
-            
+
             <!-- Financial Topics Grid -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div class="bg-white/10 p-4 rounded-xl backdrop-blur-sm">
@@ -384,7 +286,7 @@
                         Learn about tutoring →
                     </a>
                 </div>
-                
+
                 <!-- Institutions -->
                 <div class="bg-gray-50 p-10 rounded-3xl hover:shadow-xl transition">
                     <div class="w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center mb-6">
@@ -519,7 +421,7 @@
                 <rect width="100%" height="100%" fill="url(#grid)"/>
             </svg>
         </div>
-        
+
         <div class="relative max-w-3xl mx-auto px-6 text-center">
             <h2 class="text-4xl md:text-5xl font-bold text-white mb-6">
                 Join Early Access
@@ -542,7 +444,7 @@
                     <i class="fas fa-paper-plane ml-2"></i>
                 </button>
             </form>
-            
+
             <p class="text-white/70 text-sm mt-6">
                 No spam. Just updates about our launch and early access opportunities.
             </p>
@@ -563,7 +465,7 @@
                     </div>
                     <p class="text-sm">Preparing children for a future we can't predict.</p>
                 </div>
-                
+
                 <!-- Quick Links -->
                 <div>
                     <h5 class="text-white font-semibold mb-4">Quick Links</h5>
@@ -574,7 +476,7 @@
                         <li><a href="#" class="hover:text-white transition">Blog</a></li>
                     </ul>
                 </div>
-                
+
                 <!-- Legal -->
                 <div>
                     <h5 class="text-white font-semibold mb-4">Legal</h5>
@@ -585,7 +487,7 @@
                         <li><a href="{{ route('cookie-policy') }}" class="hover:text-white transition">Cookie Policy</a></li>
                     </ul>
                 </div>
-                
+
                 <!-- Contact -->
                 <div>
                     <h5 class="text-white font-semibold mb-4">Connect</h5>
@@ -597,11 +499,9 @@
                     </ul>
                 </div>
             </div>
-            
+
             <div class="border-t border-gray-800 pt-8 text-center text-sm">
                 <p>© {{ date('Y') }} SkillDNA. All rights reserved. Building the future of learning.</p>
             </div>
         </div>
     </footer>
-</body>
-</html>

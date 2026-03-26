@@ -189,11 +189,11 @@ class OnboardingController extends Controller
 
             UserInterest::create([
                 'user_id' => $user->id,
-                'category' => $category,
-                'subcategory' => $subcategory,
-                'interest_level' => 5, // Explicitly selected
-                'source' => 'explicit',
-                'last_updated_at' => now(),
+                'content_category' => $content_category,
+                // 'subcategory' => $subcategory,
+                // 'interest_level' => 5, // Explicitly selected
+                // 'source' => 'explicit',
+                // 'last_updated_at' => now(),
             ]);
         }
 
