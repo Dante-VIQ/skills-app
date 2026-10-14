@@ -13,7 +13,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+            $this->app->singleton(\App\Services\MLService::class, fn () => new \App\Services\MLService());
     }
 
     /**

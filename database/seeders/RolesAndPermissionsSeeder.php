@@ -5,13 +5,16 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 
 class RolesAndPermissionsSeeder extends Seeder
 {
     public function run(): void
     {
         // Reset cached roles and permissions
-        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+        app()[PermissionRegistrar::class]->forgetCachedPermissions();
+
+        $guard = 'web';
 
         // Create permissions
         $permissions = [
@@ -37,7 +40,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'review assignments',
             'generate reports',
 
-            // Master permissions (admin/super admin)
+            // Master permissions
             'view master dashboard',
             'manage all users',
             'manage all content',
@@ -47,42 +50,41 @@ class RolesAndPermissionsSeeder extends Seeder
         ];
 
         foreach ($permissions as $permission) {
-            Permission::create(['name' => $permission]);
+            Permission::firstOrCreate(
+                ['name' => $permission, 'guard_name' => $guard]
+            );
         }
 
-        // Create roles and assign permissions
-        $parentRole = Role::create(['name' => 'parent']);
-        $parentPermissions = [
+        // Create roles with guard and assign permissions
+        $parentRole = Role::firstOrCreate(['name' => 'parent', 'guard_name' => $guard]);
+        $parentRole->syncPermissions([
             'view parent dashboard',
             'manage children',
             'create assignments',
             'view child progress',
             'set skill requirements',
             'view family impact',
-        ];
-        $parentRole->givePermissionTo($parentPermissions);
+        ]);
 
-        $childRole = Role::create(['name' => 'child']);
-        $childPermissions = [
+        $childRole = Role::firstOrCreate(['name' => 'child', 'guard_name' => $guard]);
+        $childRole->syncPermissions([
             'view child dashboard',
             'access learning content',
             'submit assignments',
             'view own progress',
             'view impact contributions',
-        ];
-        $childRole->givePermissionTo($childPermissions);
+        ]);
 
-        $tutorRole = Role::create(['name' => 'tutor']);
-        $tutorPermissions = [
+        $tutorRole = Role::firstOrCreate(['name' => 'tutor', 'guard_name' => $guard]);
+        $tutorRole->syncPermissions([
             'view tutor dashboard',
             'manage assigned children',
             'create learning content',
             'review assignments',
             'generate reports',
-        ];
-        $tutorRole->givePermissionTo($tutorPermissions);
+        ]);
 
-        $masterRole = Role::create(['name' => 'master']);
-        $masterRole->givePermissionTo(Permission::all());
+        $masterRole = Role::firstOrCreate(['name' => 'master', 'guard_name' => $guard]);
+        $masterRole->syncPermissions(Permission::where('guard_name', $guard)->get());
     }
 }

@@ -171,37 +171,36 @@ class OnboardingController extends Controller
     /**
      * Save Interests
      */
-    public function saveInterests(Request $request)
-    {
-        $request->validate([
-            'interests' => 'required|array|min:3',
-            'interests.*' => 'string',
+public function saveInterests(Request $request)
+{
+    $request->validate([
+        'interests' => 'required|array|min:3',
+        'interests.*' => 'string',
+    ]);
+
+    $user = Auth::user();
+
+    // Clear existing interests
+    UserInterest::where('user_id', $user->id)->delete();
+
+    // Save new interests – only fill columns that exist in the table
+    $savedInterests = [];
+    foreach ($request->interests as $interest) {
+        [$category, $subcategory] = explode(':', $interest) + [null, null];
+
+        $savedInterests[] = UserInterest::create([
+            'user_id'     => $user->id,
+            'category'    => $category,
+            'subcategory' => $subcategory,
         ]);
-
-        $user = Auth::user();
-
-        // Clear existing interests
-        UserInterest::where('user_id', $user->id)->delete();
-
-        // Save new interests
-        foreach ($request->interests as $interest) {
-            [$content_category, $subcategory] = explode(':', $interest) + [null, null];
-
-            UserInterest::create([
-                'user_id' => $user->id,
-                'content_category' => $content_category,
-                // 'subcategory' => $subcategory,
-                // 'interest_level' => 5, // Explicitly selected
-                // 'source' => 'explicit',
-                // 'last_updated_at' => now(),
-            ]);
-        }
-
-        // Trigger immediate content discovery
-        $this->discoveryService->discoverForUser($user, 50);
-
-        return redirect()->route('dashboard')->with('success', 'Thanks! We\'re finding the best content for you.');
     }
+
+    // Convert to Collection before passing to discovery service
+    $interestsCollection = collect($savedInterests);
+    $this->discoveryService->discoverForUser($user, $interestsCollection, 50);
+
+    return redirect()->route('dashboard')->with('success', 'Thanks! We\'re finding the best content for you.');
+}
 
     /**
      * Update interests (from profile)
@@ -224,25 +223,27 @@ class OnboardingController extends Controller
     /**
      * Calculate implicit interests from user behavior
      */
-    protected function calculateImplicitInterests($user)
-    {
-        // Get categories from completed resources
-        $completedCategories = $user->completedResources()->with('resource.category')->get()->groupBy('resource.category.name')->map->count();
+protected function calculateImplicitInterests($user)
+{
+    // Get categories from completed resources
+    $completedCategories = $user->completedResources()
+        ->with('resource.category')
+        ->get()
+        ->groupBy('resource.category.name')
+        ->map->count();
 
-        foreach ($completedCategories as $category => $count) {
-            UserInterest::updateOrCreate(
-                [
-                    'user_id' => $user->id,
-                    'category' => $category,
-                ],
-                [
-                    'interest_level' => min($count * 2, 5),
-                    'source' => 'implicit',
-                    'last_updated_at' => now(),
-                ],
-            );
-        }
+    foreach ($completedCategories as $category => $count) {
+        UserInterest::updateOrCreate(
+            [
+                'user_id'  => $user->id,
+                'category' => $category,
+            ],
+            [
+                'subcategory' => null,
+            ]
+        );
     }
+}
     /**
      * Step 3: Learning Goals
      */

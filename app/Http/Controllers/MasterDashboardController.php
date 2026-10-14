@@ -25,7 +25,7 @@ class MasterDashboardController extends Controller
             'active_parents' => User::role('parent')->where('is_active', true)->count(),
             'total_content' => ContentModule::where('is_active', true)->count(),
             'active_projects' => SocialImpactProject::where('status', 'active')->count(),
-            'total_impact' => \App\Models\ImpactContribution::sum('amount'),
+            'total_impact' => \App\Models\ImpactContribution::sum('contribution_value'),   // ✅ change this
             'today_activities' => \App\Models\ChildActivity::whereDate('created_at', today())->count(),
         ];
         

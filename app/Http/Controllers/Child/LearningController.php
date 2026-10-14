@@ -190,49 +190,78 @@ class LearningController extends Controller
     /**
      * Get trending content
      */
-    protected function getTrendingContent($user)
-    {
-        return \App\Models\LearningResource::where('is_published', true)
-            ->orderBy('view_count', 'desc')
-            ->limit(5)
-            ->get()
-            ->map(function ($resource) {
-                return [
-                    'type' => 'internal',
-                    'id' => $resource->id,
-                    'title' => $resource->title,
-                    'description' => $resource->summary,
-                    'url' => route('learning.show', $resource->id),
-                    'views' => $resource->view_count,
-                    'reason' => 'Trending now'
-                ];
-            });
-    }
+protected function getTrendingContent($user)
+{
+    return \App\Models\LearningResource::where('is_published', true)
+        ->orderBy('points', 'desc')   // ✅ use existing column
+        ->limit(5)
+        ->get()
+        ->map(function ($resource) {
+            return [
+                'type'        => 'internal',
+                'id'          => $resource->id,
+                'title'       => $resource->title,
+                'description' => $resource->summary ?? $resource->description,
+                'url'         => route('learning.show', $resource->id),
+                'points'      => $resource->points,   // ✅ use points
+                'reason'      => 'Trending now',
+            ];
+        });
+}
 
     /**
      * Get content to fill skill gaps
      */
-    protected function getSkillGapContent($user)
-    {
-        // Analyze user's learning history to find gaps
-        $completedTopics = $user->completedResources()
-            ->pluck('topic')
-            ->unique()
-            ->toArray();
-        
-        $allTopics = ['math', 'science', 'programming', 'robotics', 'language'];
-        $gaps = array_diff($allTopics, $completedTopics);
-        
-        if (empty($gaps)) {
-            return collect();
-        }
-        
-        return $this->discoveryService->searchMultiSource(
-            interests: $gaps,
-            difficulty: 'beginner',
-            limit: 3
-        );
+protected function getSkillGapContent($user)
+{
+    // Get completed learning_resource_ids for this user
+    $completedResourceIds = \App\Models\UserInteraction::where('user_id', $user->id)
+        ->where('completed', true)
+        ->pluck('learning_resource_id')
+        ->unique()
+        ->toArray();
+
+    // Get topics from the LearningResource models
+    $completedTopics = \App\Models\LearningResource::whereIn('id', $completedResourceIds)
+        ->get()
+        ->flatMap(function ($resource) {
+            // Combine tags (JSON) and content_category_id
+            $tags = is_array($resource->tags)
+                ? $resource->tags
+                : json_decode($resource->tags ?? '[]', true);
+
+            $topics = $tags ?: [];
+            if ($resource->content_category_id) {
+                $topics[] = $resource->content_category_id;
+            }
+            return $topics;
+        })
+        ->filter()
+        ->map(fn($t) => strtolower((string) $t))
+        ->unique()
+        ->toArray();
+
+    // Define all available topics from content_categories
+    $allTopics = \App\Models\ContentCategory::pluck('slug')
+        ->map(fn($s) => strtolower($s))
+        ->toArray();
+
+    $gaps = array_diff($allTopics, $completedTopics);
+
+    if (empty($gaps)) {
+        return collect();
     }
+
+    $age = $this->getUserAge($user);
+    $difficulty = $this->ageToDifficulty($age);
+
+    return $this->discoveryService->searchMultiSource(
+        interests: array_slice(array_values($gaps), 0, 3),
+        difficulty: $difficulty,
+        limit: 6,
+        user: $user
+    );
+}
 
     /**
      * Helper methods

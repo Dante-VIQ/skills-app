@@ -2,18 +2,6 @@
 
 return [
 
-    /*
-    |--------------------------------------------------------------------------
-    | Third Party Services
-    |--------------------------------------------------------------------------
-    |
-    | This file is for storing the credentials for third party services such
-    | as Mailgun, Postmark, AWS and more. This file provides the de facto
-    | location for this type of information, allowing packages to have
-    | a conventional file to locate the various service credentials.
-    |
-    */
-
     'postmark' => [
         'key' => env('POSTMARK_API_KEY'),
     ],
@@ -23,7 +11,7 @@ return [
     ],
 
     'ses' => [
-        'key' => env('AWS_ACCESS_KEY_ID'),
+        'key'    => env('AWS_ACCESS_KEY_ID'),
         'secret' => env('AWS_SECRET_ACCESS_KEY'),
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
@@ -31,51 +19,59 @@ return [
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
-            'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
+            'channel'              => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
 
+    // ============================================================
+    // YOUTUBE
+    // ============================================================
     'youtube' => [
-        'api_key' => env('YOUTUBE_API_KEY'),
-        'api_url' => env('YOUTUBE_API_URL', 'https://www.googleapis.com/youtube/v3'),
+        'api_key'     => env('YOUTUBE_API_KEY'),
+        'api_url'     => env('YOUTUBE_API_URL', 'https://www.googleapis.com/youtube/v3'),
         'max_results' => env('YOUTUBE_MAX_RESULTS', 50),
         'safe_search' => env('YOUTUBE_SAFE_SEARCH', 'strict'),
-        
-        // Additional configuration
-        'cache_duration' => 3600, // Cache results for 1 hour
-        'timeout' => 30, // Request timeout in seconds
-        
-        // Video categories to block (by category ID)
+
+        'cache_duration' => 3600,
+        'timeout'        => 30,
+
         'blocked_categories' => [
-            '1',  // Film & Animation
-            '10', // Music (entertainment)
-            '20', // Gaming
-            '22', // Comedy
-            '23', // Entertainment
-            '24', // News & Politics
-            '25', // How-to & Style (some content may be unsafe)
+            '1', '10', '20', '22', '23', '24', '25',
         ],
-        
-        // Allowed educational categories
+
         'educational_categories' => [
-            '27', // Education
-            '28', // Science & Technology
-            '26', // How-to & Style (filtered)
-            '29', // Nonprofits & Activism
-            '35', // Documentary
+            '27', '28', '26', '29', '35',
         ],
-        
-        // Rate limiting
+
         'rate_limit' => [
-            'max_requests' => 10000, // Daily quota
-            'per_minute' => 60, // Requests per minute
+            'max_requests' => 10000,
+            'per_minute'   => 60,
         ],
     ],
-    
-    // Safe Browsing API (optional, for additional safety)
+
+    // ============================================================
+    // SAFE BROWSING (optional)
+    // ============================================================
     'safebrowsing' => [
-        'key' => env('GOOGLE_SAFE_BROWSING_KEY'),
+        'key'     => env('GOOGLE_SAFE_BROWSING_KEY'),
         'enabled' => env('SAFE_BROWSING_ENABLED', false),
     ],
-    
+
+    // ============================================================
+    // PYTHON ML SERVICE
+    // ============================================================
+    'ml' => [
+        'url'     => env('ML_SERVICE_URL', 'http://127.0.0.1:5000'),
+        'timeout' => env('ML_SERVICE_TIMEOUT', 5),
+    ],
+
+    // ============================================================
+    // MESSAGING
+    // ============================================================
+    'twilio' => [
+        'sid'           => env('TWILIO_SID'),
+        'auth_token'    => env('TWILIO_AUTH_TOKEN'),
+        'whatsapp_from' => env('TWILIO_WHATSAPP_FROM'),
+    ],
+
 ];

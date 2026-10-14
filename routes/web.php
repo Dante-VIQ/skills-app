@@ -20,9 +20,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 
 // Public routes
-Route::get('/', function () {
-    return view('welcome');
-});
+// The named landing-page route below is the canonical home route.
 
 // Protected routes
 Route::middleware(['auth'])->group(function () {
@@ -45,10 +43,6 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/learning/refresh', [UniversalLearningController::class, 'refresh'])
             ->name('api.learning.refresh');
     });
-
-    // ============= RESOURCE ROUTES =============
-    Route::get('/resources/redirect/{id}', [App\Http\Controllers\ExternalResourceController::class, 'redirect'])
-        ->name('resources.redirect');
 
     // Route::get('/learning/{id}', [App\Http\Controllers\Child\LearningController::class, 'show'])
     //     ->name('learning.show');
@@ -124,12 +118,6 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
         return redirect()->back()->with('success', 'Curation completed!');
     })->name('admin.resources.curate.run');
 });
-    // Interest selection for new users
-    Route::get('/onboarding/interests', [OnboardingController::class, 'showInterests'])
-        ->name('onboarding.interests');
-
-    Route::post('/onboarding/interests', [OnboardingController::class, 'saveInterests'])
-        ->name('onboarding.interests.save');
 // Admin routes for YouTube integration
 Route::middleware(['auth', 'can:manage-content'])->prefix('admin/youtube')->group(function () {
     Route::get('/search', [YouTubeController::class, 'search'])->name('admin.youtube.search');
@@ -287,7 +275,12 @@ Route::middleware(['auth', 'verified', 'role:child'])
                 Route::post('/assignments/{assignment}/submit', [ChildAssignmentController::class, 'submit'])->name('assignments.submit');
             });
         });
+
+        Route::get('/assignments', [ChildAssignmentController::class, 'index'])->name('assignments');
+        Route::get('/assignments/{assignment}', [ChildAssignmentController::class, 'show'])->name('assignments.show');
+        Route::post('/assignments/{assignment}/submit', [ChildAssignmentController::class, 'submit'])->name('assignments.submit');
     });
+
 
 // ======================
 // TUTOR ROUTES

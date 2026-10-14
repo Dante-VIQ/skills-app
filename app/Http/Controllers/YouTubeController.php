@@ -1,12 +1,12 @@
 <?php
-// app/Http/Controllers/YouTubeController.php
 
 namespace App\Http\Controllers;
 
-use App\Services\YouTubeService;
-use App\Models\LearningResource;
 use App\Models\Category;
+use App\Models\LearningResource;
+use App\Services\YouTubeService;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Log;
 
 class YouTubeController extends Controller

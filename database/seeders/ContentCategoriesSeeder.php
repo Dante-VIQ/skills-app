@@ -12,6 +12,7 @@ class ContentCategoriesSeeder extends Seeder
         $categories = [
             [
                 'name' => 'Financial Literacy',
+                'slug' => 'financial-literacy',
                 'description' => 'Understanding money, budgeting, saving, and basic financial concepts',
                 'is_universal' => true,
                 'parent_enforced' => true,
@@ -21,6 +22,7 @@ class ContentCategoriesSeeder extends Seeder
             ],
             [
                 'name' => 'Health & Safety',
+                'slug' => 'health-safety',
                 'description' => 'Personal health, hygiene, safety awareness, and emergency procedures',
                 'is_universal' => true,
                 'parent_enforced' => true,
@@ -30,6 +32,7 @@ class ContentCategoriesSeeder extends Seeder
             ],
             [
                 'name' => 'Digital Citizenship',
+                'slug' => 'digital-citizenship',
                 'description' => 'Online safety, digital etiquette, and responsible technology use',
                 'is_universal' => true,
                 'parent_enforced' => true,
@@ -39,6 +42,7 @@ class ContentCategoriesSeeder extends Seeder
             ],
             [
                 'name' => 'Environmental Awareness',
+                'slug' => 'environmental-awareness',
                 'description' => 'Understanding ecosystems, conservation, and sustainable practices',
                 'is_universal' => true,
                 'parent_enforced' => false,
@@ -48,6 +52,7 @@ class ContentCategoriesSeeder extends Seeder
             ],
             [
                 'name' => 'Emotional Intelligence',
+                'slug' => 'emotional-intelligence',
                 'description' => 'Recognizing emotions, empathy, self-regulation, and social skills',
                 'is_universal' => true,
                 'parent_enforced' => false,
@@ -57,6 +62,7 @@ class ContentCategoriesSeeder extends Seeder
             ],
             [
                 'name' => 'Robotics & AI',
+                'slug' => 'robotics-ai',
                 'description' => 'Building robots, understanding artificial intelligence',
                 'is_universal' => false,
                 'parent_enforced' => false,
@@ -65,6 +71,7 @@ class ContentCategoriesSeeder extends Seeder
             ],
             [
                 'name' => 'Art & Creativity',
+                'slug' => 'art-creativity',
                 'description' => 'Drawing, painting, design, and creative expression',
                 'is_universal' => false,
                 'parent_enforced' => false,
@@ -73,6 +80,7 @@ class ContentCategoriesSeeder extends Seeder
             ],
             [
                 'name' => 'Science & Experiments',
+                'slug' => 'science-experiments',
                 'description' => 'Chemistry, physics, biology, and hands-on experiments',
                 'is_universal' => false,
                 'parent_enforced' => false,
@@ -81,6 +89,7 @@ class ContentCategoriesSeeder extends Seeder
             ],
             [
                 'name' => 'Music & Sound',
+                'slug' => 'music-sound',
                 'description' => 'Playing instruments, singing, music theory, and sound engineering',
                 'is_universal' => false,
                 'parent_enforced' => false,
@@ -89,6 +98,7 @@ class ContentCategoriesSeeder extends Seeder
             ],
             [
                 'name' => 'Sports & Fitness',
+                'slug' => 'sports-fitness',
                 'description' => 'Physical activities, sports rules, and fitness training',
                 'is_universal' => false,
                 'parent_enforced' => false,
@@ -98,7 +108,10 @@ class ContentCategoriesSeeder extends Seeder
         ];
 
         foreach ($categories as $category) {
-            ContentCategory::create($category);
+            ContentCategory::updateOrCreate(
+                ['slug' => $category['slug']],   // match on slug instead of name
+                $category
+            );
         }
     }
 }
