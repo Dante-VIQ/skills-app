@@ -14,13 +14,11 @@ class UserInterest extends Model
         'user_id',
         'category',        // e.g., 'programming', 'math', 'robotics'
         'subcategory',      // e.g., 'python', 'algebra', 'arduino'
-        'interest_level',   // 1-5 based on interactions
         'source',          // 'explicit' (user selected) or 'implicit' (ML detected)
         'last_updated_at'
     ];
 
     protected $casts = [
-        'interest_level' => 'integer',
         'last_updated_at' => 'datetime'
     ];
 
@@ -32,10 +30,17 @@ class UserInterest extends Model
     /**
      * Get active interests (level >= 3 or explicitly selected)
      */
-    public function scopeActive($query)
+   public function scopeActive($query)
     {
-        return $query->where('interest_level', '>=', 3)
-                    ->orWhere('source', 'explicit');
+        return $query;
+    }
+
+        /**
+     * Scope by category
+     */
+    public function scopeForCategory($query, string $category)
+    {
+        return $query->where('category', $category);
     }
 
     /**

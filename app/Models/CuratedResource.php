@@ -177,7 +177,7 @@ class CuratedResource extends Model
         if ($this->source && $this->source->requires_attribution) {
             return $this->source->formatAttribution() . ': ' . $this->title;
         }
-        
+
         return $this->title;
     }
 
@@ -207,14 +207,14 @@ class CuratedResource extends Model
     {
         $totalReferrals = $this->referral_count;
         $successfulReferrals = $this->successfulReferrals()->count();
-        
+
         if ($totalReferrals > 0) {
             $clickRate = $successfulReferrals / $totalReferrals;
             $this->popularity_score = min($clickRate * 100, 100);
         } else {
             $this->popularity_score = 50; // Default middle score
         }
-        
+
         $this->save();
     }
 
@@ -229,9 +229,9 @@ class CuratedResource extends Model
             'intermediate' => 10,
             'advanced' => 14,
         ];
-        
+
         $minAge = $ageMap[$this->difficulty_level] ?? 5;
-        
+
         return $age >= $minAge;
     }
 
@@ -246,7 +246,7 @@ class CuratedResource extends Model
             if (empty($resource->slug)) {
                 $resource->slug = Str::slug($resource->title);
             }
-            
+
             if (empty($resource->quality_score)) {
                 $resource->quality_score = 70; // Default quality score
             }

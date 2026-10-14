@@ -138,39 +138,39 @@ class AutomatedContentDiscovery
     /**
      * Search curated resources
      */
-    protected function searchCurated(string $category, ?string $subcategory): Collection
-    {
-        $query = CuratedResource::where('is_active', true)
-            ->where('is_safe', true)
-            ->with('source');
+protected function searchCurated(string $category, ?string $subcategory): Collection
+{
+    $query = CuratedResource::where('is_active', true)
+        ->where('is_safe', true)
+        ->with('source');
 
-        if ($subcategory) {
-            $query->where(function ($q) use ($category, $subcategory) {
-                $q->where('topic', $category)
-                  ->where('subtopic', $subcategory);
-            });
-        } else {
-            $query->where('topic', $category);
-        }
-
-        return $query->limit(5)
-            ->get()
-            ->map(function ($resource) {
-                return [
-                    'type' => 'curated',
-                    'id' => $resource->id,
-                    'title' => $resource->title,
-                    'description' => $resource->summary ?? $resource->description,
-                    'url' => route('resources.redirect', $resource->id),
-                    'thumbnail' => $resource->thumbnail_url,
-                    'source' => $resource->source->name,
-                    'source_icon' => $this->getSourceIcon($resource->source->slug),
-                    'difficulty' => $resource->difficulty_level,
-                    'category' => $resource->topic,
-                    'raw_score' => $resource->quality_score / 100,
-                ];
-            });
+    if ($subcategory) {
+        $query->where(function ($q) use ($category, $subcategory) {
+            $q->where('topic', $category)          // ✅ exists
+              ->where('subtopic', $subcategory);   // ✅ exists
+        });
+    } else {
+        $query->where('topic', $category);         // ✅ exists
     }
+
+    return $query->limit(5)
+        ->get()
+        ->map(function ($resource) {
+            return [
+                'type'        => 'curated',
+                'id'          => $resource->id,
+                'title'       => $resource->title,
+                'description' => $resource->summary ?? $resource->description,
+                'url'         => route('resources.redirect', $resource->id),
+                'thumbnail'   => $resource->thumbnail_url,       // ✅ exists
+                'source'      => $resource->source->name,        // check relationship
+                'source_icon' => $this->getSourceIcon($resource->source->slug),
+                'difficulty'  => $resource->difficulty_level,    // ✅ exists
+                'category'    => $resource->topic,               // ✅ exists
+                'raw_score'   => $resource->quality_score / 100, // ✅ exists
+            ];
+        });
+}
 
     /**
      * Search internal resources
@@ -179,30 +179,48 @@ class AutomatedContentDiscovery
     {
         $query = LearningResource::where('is_published', true);
 
+        // Match on tags (JSON) or title/description (fallback)
         if ($subcategory) {
             $query->where(function ($q) use ($category, $subcategory) {
-                $q->where('topic', $category)
-                  ->orWhereJsonContains('tags', $subcategory);
+                $q->whereJsonContains('tags', $category)
+                    ->orWhereJsonContains('tags', $subcategory)
+                    ->orWhere('title', 'LIKE', "%{$subcategory}%")
+                    ->orWhere('description', 'LIKE', "%{$subcategory}%");
             });
         } else {
-            $query->where('topic', $category);
+            $query->where(function ($q) use ($category) {
+                $q->whereJsonContains('tags', $category)
+                    ->orWhere('title', 'LIKE', "%{$category}%")
+                    ->orWhere('description', 'LIKE', "%{$category}%");
+            });
         }
 
         return $query->limit(3)
             ->get()
             ->map(function ($resource) {
+                // Extract thumbnail from source_metadata if available
+                $thumbnail = null;
+                if (!empty($resource->source_metadata)) {
+                    $meta = is_array($resource->source_metadata)
+                        ? $resource->source_metadata
+                        : json_decode($resource->source_metadata, true);
+                    $thumbnail = $meta['thumbnail'] ?? $meta['thumbnail_url'] ?? null;
+                }
+
                 return [
-                    'type' => 'internal',
-                    'id' => $resource->id,
-                    'title' => $resource->title,
+                    'type'        => 'internal',
+                    'id'          => $resource->id,
+                    'title'       => $resource->title,
                     'description' => $resource->summary ?? $resource->description,
-                    'url' => route('learning.show', $resource->id),
-                    'thumbnail' => $resource->thumbnail_url,
-                    'source' => 'SkillDNA',
+                    'url'         => $resource->external_url
+                        ? $resource->external_url
+                        : route('learning.show', $resource->id),
+                    'thumbnail'   => $thumbnail,
+                    'source'      => 'SkillDNA',
                     'source_icon' => '📚',
-                    'difficulty' => $resource->difficulty_level,
-                    'category' => $resource->topic,
-                    'raw_score' => 0.8,
+                    'difficulty'  => $resource->difficulty_level,
+                    'category'    => $resource->content_category_id,
+                    'raw_score'   => 0.8,
                 ];
             });
     }
@@ -230,14 +248,14 @@ class AutomatedContentDiscovery
         })->sortByDesc('score');
     }
 
-    protected function isChild($user): bool
-    {
-        return $user && $user->role === 'child';
-    }
+protected function isChild($user): bool
+{
+    return $user && $user->hasRole('child');
+}
 
     protected function getSourceIcon($slug): string
     {
-        return match($slug) {
+        return match ($slug) {
             'w3schools' => '🌐',
             'khan-academy' => '📚',
             'mdn' => '📘',
@@ -246,20 +264,15 @@ class AutomatedContentDiscovery
         };
     }
 
-    protected function getBehaviorBoost($item, $user): float
-    {
-        // Check if user has interacted with similar content
-        $similarCount = $user->interactions()
-            ->whereHas('resource', function ($q) use ($item) {
-                $q->where('topic', $item['category'] ?? '');
-            })->count();
-
-        return 1 + min($similarCount * 0.05, 0.3);
-    }
+protected function getBehaviorBoost($item, $user): float
+{
+    // Placeholder – real boost requires interaction tracking
+    return 1.0;
+}
 
     protected function getSourceTrust($source): float
     {
-        return match($source) {
+        return match ($source) {
             'Khan Academy' => 1.2,
             'MDN Web Docs' => 1.1,
             'W3Schools' => 1.0,
@@ -269,4 +282,52 @@ class AutomatedContentDiscovery
             default => 1.0
         };
     }
+
+    /**
+ * Search across all sources for a list of interests/topics
+ */
+public function searchMultiSource(
+    array $interests,
+    ?string $difficulty = null,
+    int $limit = 10,
+    ?User $user = null
+): Collection {
+    if (empty($interests)) {
+        return collect();
+    }
+
+    $allContent = collect();
+
+    foreach ($interests as $topic) {
+        // YouTube
+        $allContent = $allContent->concat(
+            $this->searchYouTube($topic, null, $user)
+        );
+
+        // Curated
+        $allContent = $allContent->concat(
+            $this->searchCurated($topic, null)
+        );
+
+        // Internal
+        $allContent = $allContent->concat(
+            $this->searchInternal($topic, null)
+        );
+    }
+
+    // Optional difficulty filter
+    if ($difficulty) {
+        $allContent = $allContent->filter(function ($item) use ($difficulty) {
+            return empty($item['difficulty']) || $item['difficulty'] === $difficulty;
+        });
+    }
+
+    // Dedupe by URL
+    $unique = $allContent->unique('url');
+
+    // Score & rank
+    $scored = $this->scoreContent($unique, $user);
+
+    return $scored->take($limit)->values();
+}
 }

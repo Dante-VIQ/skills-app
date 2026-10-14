@@ -10,7 +10,12 @@ class Interest extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'icon', 'description'];
+   protected $fillable = [
+    'name',
+    'slug',
+    'icon',
+    'description',
+];
 
     public function users()
     {
@@ -18,5 +23,14 @@ class Interest extends Model
                     ->withPivot('affinity_score')
                     ->withTimestamps();
     }
+
+    protected static function booted(): void
+{
+    static::creating(function ($interest) {
+        if (empty($interest->slug)) {
+            $interest->slug = \Illuminate\Support\Str::slug($interest->name);
+        }
+    });
+}
 }
 

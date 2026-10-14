@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\ChildActivity;
 use App\Models\ImpactContribution;
 use App\Models\ParentAssignment;
+use App\Models\TutorProfile;
 use App\Models\UserInteraction;
 use App\Models\WatchTimeRecord;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -33,7 +34,6 @@ class User extends Authenticatable
         'interests' => 'array',
         'skills' => 'array',
         'learning_goals' => 'array',
-        'interests' => 'array',
         'skill_levels' => 'array',
         'badges' => 'array',
         'settings' => 'array',
@@ -181,13 +181,31 @@ class User extends Authenticatable
         return Storage::url($this->avatar);
     }
 
-public function getInterestsAttribute()
-{
-    // Get user's interests from profile or derive from interactions
-    return $this->profile['interests'] ?? [];
-}
+    /**
+     * Read interests from the dedicated column, falling back to legacy profile data.
+     *
+     * The explicit accessor must preserve the cast column value; otherwise writes to
+     * the `interests` attribute can appear to succeed but read back as an empty array.
+     */
+    public function getInterestsAttribute($value): array
+    {
+        if (is_array($value)) {
+            return $value;
+        }
 
- /**
+        if (is_string($value) && $value !== '') {
+            $decoded = json_decode($value, true);
+            if (is_array($decoded)) {
+                return $decoded;
+            }
+        }
+
+        $legacyInterests = data_get($this->profile, 'interests', []);
+
+        return is_array($legacyInterests) ? $legacyInterests : [];
+    }
+
+    /**
      * Get all interactions for this user
      */
     public function interactions()
@@ -268,4 +286,13 @@ public function getInterestsAttribute()
             ->first()?->name;
     }
 
+    public function tutorProfile()
+    {
+        return $this->hasOne(TutorProfile::class);
+    }
+
+    public function getNameAttribute(): string
+    {
+        return trim(($this->first_name ?? '') . ' ' . ($this->last_name ?? ''));
+    }
 }

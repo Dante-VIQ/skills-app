@@ -85,7 +85,7 @@ class ChildDashboardController extends Controller
         $streak = $this->calculateLearningStreak($child);
 
         // Calculate total impact
-        // $totalImpact = $child->impactContributions()->sum('amount');
+        $totalImpact = $child->impactContributions()->sum('contribution_value');
 
         // Get category distribution
         $categoryDistribution = $child->activities()

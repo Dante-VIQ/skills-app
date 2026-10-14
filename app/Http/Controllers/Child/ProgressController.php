@@ -14,27 +14,27 @@ class ProgressController extends Controller
     {
         $this->middleware(['auth', 'verified', 'role:child', 'check.onboarding']);
     }
-    
+
     public function index()
     {
         $child = auth()->user();
-        
+
         // Weekly progress
         $weeklyProgress = $this->getWeeklyProgress($child);
-        
+
         // Skills progress
         $skillsProgress = $this->getSkillsProgress($child);
-        
+
         // Impact contributions
         $impactContributions = $child->impactContributions()
             ->with('project')
             ->latest()
             ->take(10)
             ->get();
-        
+
         // Learning streak
         $streak = $this->calculateLearningStreak($child);
-        
+
         return view('child.progress.index', compact(
             'weeklyProgress',
             'skillsProgress',
@@ -42,43 +42,34 @@ class ProgressController extends Controller
             'streak'
         ));
     }
-    
+
     public function activityLog()
     {
         $child = auth()->user();
-        
+
         $activities = $child->activities()
             ->with(['contentModule.category', 'assignment'])
             ->latest()
             ->paginate(20);
-        
+
         return view('child.progress.activity-log', compact('activities'));
     }
-    
-    public function skillReport()
-    {
-        $child = auth()->user();
-        
-        // Get all skills the child has interacted with
-        $skills = $this->getChildSkillsReport($child);
-        
-        // Get universal skill requirements progress
-        $universalRequirements = $child->skillRequirements()
-            ->with('category')
-            ->get()
-            ->map(function ($requirement) {
-                $requirement->progress_percentage = $requirement->progressPercentage();
-                return $requirement;
-            });
-        
-        return view('child.progress.skill-report', compact('skills', 'universalRequirements'));
-    }
-    
+
+public function skillReport()
+{
+    $child = auth()->user();
+
+    // Get skills from activity analysis (no separate requirements table yet)
+    $skills = $this->getChildSkillsReport($child);
+
+    return view('child.progress.skills', compact('skills'));
+}
+
     private function getWeeklyProgress($child)
     {
         $startOfWeek = Carbon::now()->startOfWeek();
         $endOfWeek = Carbon::now()->endOfWeek();
-        
+
         return [
             'activities_count' => $child->activities()
                 ->whereBetween('created_at', [$startOfWeek, $endOfWeek])
@@ -92,14 +83,14 @@ class ProgressController extends Controller
                 ->count(),
             'impact_generated' => $child->impactContributions()
                 ->whereBetween('created_at', [$startOfWeek, $endOfWeek])
-                ->sum('amount'),
+                ->sum('contribution_value'),   // ✅ matches migration
         ];
     }
-    
+
     private function getSkillsProgress($child)
     {
         $skills = $child->skills ?? [];
-        
+
         return collect($skills)->map(function ($skill) use ($child) {
             return [
                 'name' => $skill,
@@ -122,17 +113,17 @@ class ProgressController extends Controller
             ];
         });
     }
-    
+
     private function calculateLearningStreak($child)
     {
         $streak = 0;
         $date = Carbon::today();
-        
+
         while (true) {
             $hasActivity = $child->activities()
                 ->whereDate('created_at', $date->format('Y-m-d'))
                 ->exists();
-            
+
             if ($hasActivity) {
                 $streak++;
                 $date->subDay();
@@ -140,21 +131,34 @@ class ProgressController extends Controller
                 break;
             }
         }
-        
+
         return $streak;
     }
-    
+
     private function getChildSkillsReport($child)
     {
-        // This would query skills from completed modules
-        // For now, return the child's skills array
-        return collect($child->skills ?? [])->map(function ($skill) {
+        // Report observed activity only. Skill mastery should not be invented
+        // until the application has a validated assessment model.
+        return collect($child->skills ?? [])->map(function ($skill) use ($child) {
+            $activities = $child->activities()
+                ->whereHas('contentModule', function ($query) use ($skill) {
+                    $query->whereHas('skills', function ($query) use ($skill) {
+                        $query->where('name', $skill);
+                    });
+                });
+
+            $activityCount = (clone $activities)->count();
+            $lastPracticed = (clone $activities)->latest()->value('created_at');
+
             return [
                 'name' => $skill,
-                'level' => 'beginner', // This would be calculated
-                'progress' => rand(20, 100), // This would be calculated
-                'last_practiced' => now()->subDays(rand(0, 30))->format('Y-m-d'),
+                'level' => 'Not assessed',
+                'progress' => null,
+                'activities_count' => $activityCount,
+                'last_practiced' => $lastPracticed ? Carbon::parse($lastPracticed)->format('Y-m-d') : null,
             ];
         });
     }
+
+    
 }

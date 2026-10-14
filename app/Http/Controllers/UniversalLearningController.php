@@ -3,12 +3,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
-use App\Models\UserInterest;
 use App\Models\CuratedResource;
 use App\Models\LearningResource;
+use App\Models\User;
+use App\Models\UserInterest;
+use App\Services\Brain\PersonalizationBrain;
 use App\Services\Discovery\AutomatedContentDiscovery;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -25,39 +27,48 @@ class UniversalLearningController extends Controller
     /**
      * THE UNIVERSAL LEARNING PAGE - Same for everyone!
      */
-    public function index()
-    {
-        $user = Auth::user();
 
-        // Log the access
-        Log::info('Universal learning page accessed', [
-            'user_id' => $user->id,
-            'user_type' => $user->role,
-            'age' => $this->getUserAge($user)
-        ]);
+    public function index(PersonalizationBrain $brain)
+{
+    $user = Auth::user();
 
-        // Step 1: Check if user has interests, if not redirect to onboarding
-        if (!$this->userHasInterests($user)) {
-            return redirect()->route('onboarding.interests')
-                ->with('message', 'Tell us what you like to learn!');
-        }
+    if (!$this->userHasInterests($user)) {
+        return redirect()->route('onboarding.interests')
+            ->with('message', 'Tell us what you like to learn!');
+    }
 
-        // Step 2: Get personalized content based on user type and age
-        $content = $this->getPersonalizedContent($user);
+    // ============================================================
+    // NEW: Brain-driven path (feature-flagged, off by default)
+    // ============================================================
+    if ($brain->shouldUseBrain($user)) {
+        $output = $brain->thinkCached($user);
 
-        // Step 3: Get user's learning context
-        $context = $this->getUserContext($user);
-
-        // Step 4: Return the universal view
         return view('learning.universal', [
-            'content' => $content,
-            'user' => $user,
-            'context' => $context,
-            'userType' => $this->getUserTypeLabel($user),
-            'ageGroup' => $this->getAgeGroup($user),
+            'content'      => $output->content(),   // same shape as before
+            'user'         => $user,
+            'context'      => $this->getUserContext($user),
+            'userType'     => $this->getUserTypeLabel($user),
+            'ageGroup'     => $this->getAgeGroup($user),
+            'brainEnabled' => true,
+            'brainData'    => $output->toArray(),
         ]);
     }
 
+    // ============================================================
+    // OLD path (unchanged)
+    // ============================================================
+    $content = $this->getPersonalizedContent($user);
+    $context = $this->getUserContext($user);
+
+    return view('learning.universal', [
+        'content'      => $content,
+        'user'         => $user,
+        'context'      => $context,
+        'userType'     => $this->getUserTypeLabel($user),
+        'ageGroup'     => $this->getAgeGroup($user),
+        'brainEnabled' => false,
+    ]);
+}
     /**
      * Load more recommendations (AJAX endpoint)
      */
@@ -317,7 +328,7 @@ class UniversalLearningController extends Controller
     {
         $age = $this->getUserAge($user);
 
-        return match(true) {
+        return match (true) {
             $age < 8 => 'Early Learner (5-7)',
             $age < 12 => 'Elementary (8-11)',
             $age < 15 => 'Middle School (12-14)',
@@ -328,7 +339,7 @@ class UniversalLearningController extends Controller
 
     protected function ageToDifficulty($age): string
     {
-        return match(true) {
+        return match (true) {
             $age < 8 => 'beginner',
             $age < 13 => 'intermediate',
             default => 'advanced'
@@ -337,7 +348,7 @@ class UniversalLearningController extends Controller
 
     protected function getUserTypeLabel($user): string
     {
-        return match($user->role) {
+        return match ($user->role) {
             'child' => 'Student',
             'parent' => 'Parent',
             'tutor' => 'Educator',
@@ -347,7 +358,7 @@ class UniversalLearningController extends Controller
 
     protected function getSourceIcon($slug): string
     {
-        return match($slug) {
+        return match ($slug) {
             'w3schools' => '🌐',
             'khan-academy' => '📚',
             'mdn' => '📘',

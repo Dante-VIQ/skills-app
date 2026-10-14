@@ -168,4 +168,14 @@ public function prerequisiteExternalResources()
     return $this->externalResources()
         ->wherePivot('relationship_type', 'prerequisite');
 }
+// app/Models/UserInteraction.php
+public function resource()
+{
+    return $this->belongsTo(LearningResource::class, 'learning_resource_id');
+}
+
+public function learningResource()
+{
+    return $this->belongsTo(LearningResource::class, 'learning_resource_id');
+}
 }

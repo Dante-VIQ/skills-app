@@ -46,7 +46,7 @@ class ImpactController extends Controller
             ->latest()
             ->paginate(20);
         
-        $totalFamilyImpact = $familyContributions->sum('amount');
+        $totalFamilyImpact = $familyContributions->sum('contribution_value');   // ✅ change this
         
         return view('parent.impact.index', compact('familyContributions', 'totalFamilyImpact'));
     }

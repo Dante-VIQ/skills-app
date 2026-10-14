@@ -9,24 +9,30 @@ class ChildActivity extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
+   protected $fillable = [
         'child_id',
-        'assignment_id',
         'content_module_id',
-        'type', // module_completed, assignment_submission, quiz_attempt, etc.
+        'assignment_id',
+        'type',
         'title',
         'description',
-        'data', // JSON data for activity specifics
+        'data',
         'duration',
         'score',
         'max_score',
+        'percentage_score',
         'status',
+        'responses',
+        'metadata',
         'reviewed_by',
         'reviewed_at',
+        'feedback',
     ];
 
     protected $casts = [
-        'data' => 'array',
+        'data'       => 'array',
+        'responses'  => 'array',
+        'metadata'   => 'array',
         'reviewed_at' => 'datetime',
     ];
 
